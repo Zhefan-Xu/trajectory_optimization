@@ -1,3 +1,5 @@
+#ifndef READFILE_H
+#define READFILE_H
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -11,18 +13,16 @@ struct pose{
 	double yaw;
 };
 
-
-
-int main(){
+std::vector<std::vector<pose>> read_waypoint_file(std::string filename){
 	std::string line;
-	std::ifstream waypoint_file ("/home/zhefan/catkin_ws/src/trajectory_optimization/path/waypoint_maze_complete.txt");
+	std::ifstream waypoint_file (filename);
 
 	int path_number = 0;
 	std::vector<pose> path;
 	std::vector<std::vector<pose>> paths;
 	if (waypoint_file.is_open()){
 		while (getline(waypoint_file, line)){
-			cout << line << endl;
+			// cout << line << endl;
 			if (line.find("N") != std::string::npos){
 				if (path_number != 0){
 					paths.push_back(path);
@@ -73,15 +73,7 @@ int main(){
 	else{
 		cout << "unable to open file" << endl;
 	}
-
-	int path_count = 1;
-	for (std::vector<pose> path: paths){
-		cout << "No. " << path_count << endl;
-		for (pose p: path){
-			cout << p.x << " " << p.y << " " << p.z << " " << p.yaw << endl;
-		}
-		cout << endl;
-		++path_count;
-	}
-
+	return paths;
 }
+
+#endif

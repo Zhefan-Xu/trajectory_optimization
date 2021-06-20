@@ -116,7 +116,7 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-# include
+  include
   ${catkin_INCLUDE_DIRS}
 )
 
@@ -134,7 +134,7 @@ include_directories(
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 # add_executable(${PROJECT_NAME}_node src/trajectory_optimization_node.cpp)
-add_executable(saved_path_vis src/saved_path_vis.cpp)
+add_executable(waypoint_path_vis src/waypoint_path_vis.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -151,7 +151,7 @@ add_executable(saved_path_vis src/saved_path_vis.cpp)
 # target_link_libraries(${PROJECT_NAME}_node
 #   ${catkin_LIBRARIES}
 # )
-target_link_libraries(saved_path_vis ${catkin_LIBRARIES})
+target_link_libraries(waypoint_path_vis ${catkin_LIBRARIES})
 
 #############
 ## Install ##
