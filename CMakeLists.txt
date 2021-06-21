@@ -118,12 +118,14 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
+  "/usr/local/lib"
 )
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
 #   src/${PROJECT_NAME}/trajectory_optimization.cpp
 # )
+add_library(polyTrajGen src/polyTrajGen.cpp)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -135,6 +137,7 @@ include_directories(
 ## The recommended prefix ensures that target names across packages don't collide
 # add_executable(${PROJECT_NAME}_node src/trajectory_optimization_node.cpp)
 add_executable(waypoint_path_vis src/waypoint_path_vis.cpp)
+add_executable(test_generate_trajectory src/test_generate_trajectory.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -152,6 +155,7 @@ add_executable(waypoint_path_vis src/waypoint_path_vis.cpp)
 #   ${catkin_LIBRARIES}
 # )
 target_link_libraries(waypoint_path_vis ${catkin_LIBRARIES})
+target_link_libraries(test_generate_trajectory ${catkin_LIBRARIES} "/usr/local/lib/libnlopt.so" polyTrajGen)
 
 #############
 ## Install ##
