@@ -9,7 +9,12 @@
 using namespace std;
 
 
-
+struct pose{
+	double x;
+	double y;
+	double z;
+	double yaw;
+};
 
 geometry_msgs::Quaternion quaternion_from_rpy(double roll, double pitch, double yaw)
 {
@@ -33,6 +38,11 @@ double rpy_from_quaternion(geometry_msgs::Quaternion quat){
 	// 	yaw = 2 * PI_const - (-yaw);
 	// }
 	return yaw;
+}
+
+double getDistance(pose p1, pose p2){
+	return sqrt(pow((p1.x - p2.x),2) + pow((p1.y - p2.y),2) + pow((p1.z - p2.z),2));	
+
 }
 
 #endif
