@@ -1,12 +1,14 @@
 #ifndef UTILS_H
 #define UTILS_H
+#include <iomanip>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <geometry_msgs/Quaternion.h>
 
 #define PI_const 3.1415926
-using std::cout; using std::endl; using std::vector;
-using std::set; using std::pair; using std::map;
+using namespace std;
+
+
 
 
 geometry_msgs::Quaternion quaternion_from_rpy(double roll, double pitch, double yaw)

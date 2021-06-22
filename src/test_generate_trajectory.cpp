@@ -13,4 +13,7 @@ int main(int argc, char **argv){
 	std::vector<pose> path = paths[test_path_index];
 
 	// Conduct optimization
+	polyTraj polytraj_optimizer;
+	polytraj_optimizer.loadWaypointPath(path);
+	polytraj_optimizer.printWaypointPath();
 }

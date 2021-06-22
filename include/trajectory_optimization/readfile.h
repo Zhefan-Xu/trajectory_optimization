@@ -4,14 +4,15 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <trajectory_optimization/polyTrajGen.h> // for pose
 
 using namespace std;
-struct pose{
-	double x;
-	double y;
-	double z;
-	double yaw;
-};
+// struct pose{
+// 	double x;
+// 	double y;
+// 	double z;
+// 	double yaw;
+// };
 
 std::vector<std::vector<pose>> read_waypoint_file(std::string filename){
 	std::string line;
