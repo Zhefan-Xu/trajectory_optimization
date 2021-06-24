@@ -3,16 +3,23 @@
 polyTraj::polyTraj(){
 	this->degree = 6;
 	this->velocityd = 0.5;
+	this->diff_degree = 3;
+	this->constructQ();
 }
 
 polyTraj::polyTraj(int _degree){
 	this->degree = _degree;
 	this->velocityd = 0.5;
+	this->diff_degree = 3;
+	this->constructQ();	
+
 }
 
-polyTraj::polyTraj(int _degree, double _velocityd){
+polyTraj::polyTraj(int _degree, double _velocityd, double _diff_degree){
 	this->degree = _degree;
 	this->velocityd = _velocityd;
+	this->diff_degree = _diff_degree;
+	this->constructQ();
 }
 
 void polyTraj::loadWaypointPath(std::vector<pose> _path){
@@ -29,51 +36,21 @@ void polyTraj::loadWaypointPath(std::vector<pose> _path){
 	}
 }
 
-std::vector<double> polyTraj::minJerkFuncCoeff(double start_t, double end_t){
-	std::vector<double> factor_arr;
-	for (int i=0; i<this->degree+1; ++i){// Iterate from c0 to cn
-		if (i < 3){
-			factor_arr.push_back(0);
-		}
-		else{
-			double factor = i * (i-1) * (i-2) * (1/(i-2)) * (pow(end_t, i-2) - pow(start_t, i-2));
-			factor_arr.push_back(factor);
-		}
-	}
-	return factor_arr;
-}
-
-std::vector<double> polyTraj::minSecDiffCoeff(double start_t, double end_t){
-	std::vector<double> factor_arr;
-	for (int i=0; i<this->degree+1; ++i){// Iterate from c0 to cn
-		if (i < 2){
-			factor_arr.push_back(0);
-		}
-		else{
-			double factor = i * (i-1) * (1/(i-1)) * (pow(end_t, i-1) - pow(start_t, i-1));
-			factor_arr.push_back(factor);
-		}
-	}
-	return factor_arr;
-}
 
 
-// vairable order:[C_seg1, C_seg2, C_seg3 ...],  in each segment: [cx0, cx1, cx2,... cyawn]
-double polyTraj::objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data){
+Eigen::MatrixXd polyTraj::constructQ(){
 	int num_path_segment = this->path.size() - 1;
-	int num_coeff = (this->degree + 1) * 4; // in each segment
-	int num_each_coeff = this->degree + 1; // in each polynomial
-
-	double norm_xyz_total = 0;
-	double norm_yaw_total = 0;
-	for (int n=0; n < num_path_segment; ++n){ // Iterate through each path segment (min jerk)
-		// There are num_coeff in each iteration
-		int segment_start_index = n * num_coeff;
+	int num_each_coeff = this->degree + 1;
+	int num_coeff = (this->degree + 1)*4;
+	int dimension = ((this->degree+1) * 4) * num_path_segment;
+	double weight_xyz = 0.5; double weight_yaw = 1 - weight_xyz;// optimization weights 
+	Eigen::MatrixXd Q (dimension, dimension);
+	for (int n=0; n<num_path_segment; ++n){
 		double start_t = this->timed[n]; double end_t =  this->timed[n+1];
 
+		int segment_start_index = n * num_coeff;
 		// x coeff
 		int x_coeff_start_index = segment_start_index;
-
 
 		// y coeff
 		int y_coeff_start_index = segment_start_index + num_each_coeff;
@@ -83,26 +60,54 @@ double polyTraj::objective_function(const std::vector<double> &x, std::vector<do
 
 		// yaw coeff
 		int yaw_coeff_start_index = segment_start_index + 3 * num_each_coeff;
+	
+		for (int i=0; i<num_each_coeff; ++i){
+			if (i < this->diff_degree){
+				Q(x_coeff_start_index+i, x_coeff_start_index+i) = 0;
+				Q(y_coeff_start_index+i, y_coeff_start_index+i) = 0;
+				Q(z_coeff_start_index+i, z_coeff_start_index+i) = 0;
+			}
+			else{
+				double factor = 1;
+				for (int j=0; j<this->diff_degree; ++j){
+					factor *= (i-j);
+				}
+				factor *= 1/(i-this->diff_degree+1)* (pow(end_t, i-this->diff_degree+1) - pow(start_t, i-this->diff_degree+1));
+				factor *= weight_xyz;
+				Q(x_coeff_start_index+i, x_coeff_start_index+i) = factor;
+				Q(y_coeff_start_index+i, y_coeff_start_index+i) = factor;
+				Q(z_coeff_start_index+i, z_coeff_start_index+i) = factor;
+			}
 
-
-		std::vector<double> factor_arr_xyz = minJerkFuncCoeff(start_t, end_t);
-		std::vector<double> factor_arr_yaw = minSecDiffCoeff(start_t, end_t);
-		double x_coeff_sum = 0; double y_coeff_sum = 0; double z_coeff_sum = 0; double yaw_coeff_sum = 0;
-		for (int count_coeff_i=0; count_coeff_i<num_coeff; ++count_coeff_i){
-			x_coeff_sum += factor_arr_xyz[count_coeff_i] * x[x_coeff_start_index + count_coeff_i];
-			y_coeff_sum += factor_arr_xyz[count_coeff_i] * x[y_coeff_start_index + count_coeff_i];
-			z_coeff_sum += factor_arr_xyz[count_coeff_i] * x[z_coeff_start_index + count_coeff_i];
-			yaw_coeff_sum += factor_arr_yaw[count_coeff_i] * x[yaw_coeff_start_index + count_coeff_i];
+			if (i < 2){
+				Q(yaw_coeff_start_index+i, yaw_coeff_start_index+i) = 0; 
+			}
+			else{
+				double factor_yaw = i * (i-1) * 1/(i-1) * (pow(end_t, i-1) - pow(start_t, i-1));
+				factor_yaw *= weight_yaw;
+			}
 		}
-		double norm_coeff_xyz = pow(x_coeff_sum, 2) + pow(y_coeff_sum, 2) + pow(z_coeff_sum, 2);
-		double norm_coeff_yaw =  pow(yaw_coeff_sum, 2);
-		norm_xyz_total += norm_coeff_xyz;
-		norm_yaw_total += norm_coeff_yaw;
 	}
+	this->Q = Q;
+}
 
-	double norm_total = 0.5 * norm_xyz_total + 0.5 * norm_yaw_total; // weights by default set to 0.5
+double polyTraj::constraint(const std::vector<double> &x, std::vector<double> &grad, void* c_data){
+    constraint_data *cd = reinterpret_cast<constraint_data*>(c_data);
+    int waypoint_num = cd->waypoint_num;
+    int variable_index = cd->variable_index;
+    int diff = cd->diff;
+}
 
-	return norm_total;
+// vairable order:[C_seg1, C_seg2, C_seg3 ...],  in each segment: [cx0, cx1, cx2,... cyawn]
+double polyTraj::objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data){
+	std::vector<double> x_copy (x);
+	Eigen::Map<Eigen::VectorXd> x_vec (x_copy.data(), x_copy.size());
+	double result = x_vec.transpose() * this->Q * x_vec;
+	if (!grad.empty()){
+		Eigen::VectorXd grad_vec = this->Q * x_vec;
+		grad = std::vector<double>(grad_vec.data(), grad_vec.data() + grad_vec.size());
+	}
+	return result ;
 }
 
 
