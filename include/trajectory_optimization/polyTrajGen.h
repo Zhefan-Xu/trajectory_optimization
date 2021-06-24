@@ -5,7 +5,8 @@
 #include <Eigen/Eigen>
 
 typedef struct {
-    int waypoint_num; // which waypoint is current waypoint
+    int waypoint_index; // which waypoint is current waypoint
+    int segment; // for position 0 is previous, 1 is after
     int variable_index; // x: 0, y:1, z:2, yaw: 3
     int diff; // derivative No.
 } constraint_data;

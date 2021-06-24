@@ -93,9 +93,73 @@ Eigen::MatrixXd polyTraj::constructQ(){
 
 double polyTraj::constraint(const std::vector<double> &x, std::vector<double> &grad, void* c_data){
     constraint_data *cd = reinterpret_cast<constraint_data*>(c_data);
-    int waypoint_num = cd->waypoint_num;
+    int waypoint_index = cd->waypoint_index;
+    int segment = cd->segment;
     int variable_index = cd->variable_index;
     int diff = cd->diff;
+    double t = this->timed[waypoint_index];
+
+    int num_each_coeff = this->degree + 1;
+	int num_coeff = (this->degree + 1)*4;
+
+    if (diff == 0){//fixed by waypoints
+    	int start_index;
+    	double target_value;
+    	double eqn = 0;
+    	start_index = (waypoint_index+segment-1) * num_coeff;
+
+    	if (variable_index == 0){ // x
+    		target_value = this->path[waypoint_index].x;
+    		start_index = start_index;
+    	}
+    	else if (variable_index == 1){ // y
+    		target_value = this->path[waypoint_index].y;
+    		start_index = start_index + num_each_coeff;
+    	}
+    	else if (variable_index == 2){ // z
+    		target_value = this->path[waypoint_index].z;
+    		start_index = start_index + 2*num_each_coeff;
+    	}
+    	else if (variable_index == 3){ // yaw
+    		target_value = this->path[waypoint_index].yaw;
+    		start_index = start_index + 3*num_each_coeff;
+    	}
+    	else{
+    		cout << "invalid variable index" << endl;
+    	}
+
+
+    	for (int i=0; i<num_each_coeff; ++i){
+ 			eqn += x[start_index+i]*pow(t, i);   		
+    	}
+    	eqn -= target_value;
+    	return eqn;
+    }
+    else{
+    	// continuity
+    	int start_index1; int start_index2;
+    	double eqn1 = 0;
+    	double eqn2 = 0;
+    	start_index1 = (waypoint_index-1) * num_coeff;
+    	start_index2 = waypoint_index * num_coeff;
+
+    	for (int i=0; i<num_each_coeff; ++i){
+    		if (i < diff){
+    			eqn1 += 0;
+    			eqn2 += 0;
+    		}
+    		else{
+    			double factor = 1;
+    			for (int j=0; j<diff; ++j){
+    				factor *= (i-j);
+    			}
+    			factor *= 1/(i-diff+1) * pow(t, i-diff+1);
+    			eqn1 += factor * x[start_index1+i];
+    			eqn2 += factor * x[start_index2+i];
+    		}
+    	}
+    	return eqn1 - eqn2;
+    }
 }
 
 // vairable order:[C_seg1, C_seg2, C_seg3 ...],  in each segment: [cx0, cx1, cx2,... cyawn]
