@@ -91,12 +91,15 @@ Eigen::MatrixXd polyTraj::constructQ(){
 	this->Q = Q;
 }
 
+
+
+
+
 double polyTraj::constraint(const std::vector<double> &x, std::vector<double> &grad, void* c_data){
-    constraint_data *cd = reinterpret_cast<constraint_data*>(c_data);
-    int waypoint_index = cd->waypoint_index;
-    int segment = cd->segment;
-    int variable_index = cd->variable_index;
-    int diff = cd->diff;
+    int waypoint_index = this->waypoint_index;
+    int segment = this->segment;
+    int variable_index = this->variable_index;
+    int diff = this->diff;
     double t = this->timed[waypoint_index];
 
     int num_each_coeff = this->degree + 1;
@@ -130,7 +133,10 @@ double polyTraj::constraint(const std::vector<double> &x, std::vector<double> &g
 
 
     	for (int i=0; i<num_each_coeff; ++i){
- 			eqn += x[start_index+i]*pow(t, i);   		
+ 			eqn += x[start_index+i]*pow(t, i);
+ 			if (!grad.empty()){
+ 				grad[start_index+i] = pow(t, i);
+ 			}		
     	}
     	eqn -= target_value;
     	return eqn;
@@ -147,6 +153,10 @@ double polyTraj::constraint(const std::vector<double> &x, std::vector<double> &g
     		if (i < diff){
     			eqn1 += 0;
     			eqn2 += 0;
+    			if (!grad.empty()){
+    				grad[start_index1+i] = 0;
+    				grad[start_index2+i] = 0;
+    			}
     		}
     		else{
     			double factor = 1;
@@ -156,14 +166,19 @@ double polyTraj::constraint(const std::vector<double> &x, std::vector<double> &g
     			factor *= 1/(i-diff+1) * pow(t, i-diff+1);
     			eqn1 += factor * x[start_index1+i];
     			eqn2 += factor * x[start_index2+i];
+    			if (!grad.empty()){
+    				grad[start_index1+i] = factor;
+    				grad[start_index2+i] = -factor;
+    			}
     		}
+    		
     	}
     	return eqn1 - eqn2;
     }
 }
 
 // vairable order:[C_seg1, C_seg2, C_seg3 ...],  in each segment: [cx0, cx1, cx2,... cyawn]
-double polyTraj::objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data){
+double polyTraj::objective(const std::vector<double> &x, std::vector<double> &grad, void* f_data){
 	std::vector<double> x_copy (x);
 	Eigen::Map<Eigen::VectorXd> x_vec (x_copy.data(), x_copy.size());
 	double result = x_vec.transpose() * this->Q * x_vec;
@@ -179,9 +194,50 @@ double polyTraj::objective_function(const std::vector<double> &x, std::vector<do
 // vairable order:[C_seg1, C_seg2, C_seg3 ...],  in each segment: [c0, c1, c2,... cn], c0 = [cx, cy, cz, cyaw]
 // Min (Jerk and 2nd derivative for yaw)
 void polyTraj::optimize(){
-	int poly_degree = 6;
 	int num_path_segment = this->path.size() - 1;
-	int num_variables = ((poly_degree+1) * 4) * num_path_segment;
+	int num_variables = ((this->degree+1) * 4) * num_path_segment;
+	nlopt::opt opt(nlopt::LD_MMA, num_variables);
+	opt.set_min_objective(polyTraj::objectiveWrap, this);
+
+	// iterate through consraints:
+	for (int w=0; w<this->path.size(); ++w){// waypoints
+		this->waypoint_index = w;
+		for (int d=0; d<=this->degree; ++d){// degree of derivatives
+			this->diff = d;
+			for (int v=0; v<4; ++d){ // variable x y z and yaw
+				this->variable_index = v;
+				if (d == 0){
+					if (w == 0){
+						this->segment = 1;
+					}
+					else{
+						for (int s=0; s<2; ++s){
+							this->segment = s;
+						}
+					}
+					// set constrain here: segment only matters for 0 derivative
+					opt.add_equality_constraint(polyTraj::constraintWrap, this, 0); // constraint
+
+				}
+				else{
+					// set constrain here:
+					opt.add_equality_constraint(polyTraj::constraintWrap, this, 0); // constraint
+
+				}
+			}	
+		}
+	}
+
+	std::vector<double> x(num_variables);
+	double minf;
+	try{
+    nlopt::result result = opt.optimize(x, minf);
+    std::cout << "found minimum at f(" << x[0] << "," << x[1] << ") = "
+        << std::setprecision(10) << minf << std::endl;
+	}
+	catch(std::exception &e) {
+	    std::cout << "nlopt failed: " << e.what() << std::endl;
+	}
 
 }
 
@@ -202,4 +258,14 @@ void polyTraj::printWaypointPath(){
 			++count; 
 		}
 	}
+}
+
+double polyTraj::objectiveWrap(const std::vector<double> &x, std::vector<double> &grad, void *data) {
+	polyTraj* obj = static_cast<polyTraj*>(data);
+	return obj->objective(x, grad, NULL);
+}
+
+double polyTraj::constraintWrap(const std::vector<double> &x, std::vector<double> &grad, void *data) {
+	polyTraj* obj = static_cast<polyTraj*>(data);
+	return obj->constraint(x, grad, NULL);
 }

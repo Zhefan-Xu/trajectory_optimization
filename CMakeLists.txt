@@ -15,6 +15,8 @@ find_package(catkin REQUIRED COMPONENTS
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
+# find_package(NLopt REQUIRED)
+# set(NLopt_INCLUDE_DIRS ${NLOPT_INCLUDE_DIR})
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -118,8 +120,9 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
-  "/usr/local/lib"
+  ${NLOPT_INCLUDE_DIR}
   "/opt/eigen-3.3.9"
+  "/opt/nlopt-2.6.2/build"
 )
 
 ## Declare a C++ library
@@ -157,7 +160,7 @@ add_executable(test_eigen src/test_eigen.cpp)
 #   ${catkin_LIBRARIES}
 # )
 target_link_libraries(waypoint_path_vis ${catkin_LIBRARIES})
-target_link_libraries(test_generate_trajectory ${catkin_LIBRARIES} "/usr/local/lib/libnlopt.so" polyTrajGen)
+target_link_libraries(test_generate_trajectory ${catkin_LIBRARIES} polyTrajGen   "/opt/nlopt-2.6.2/build/libnlopt.so")
 target_link_libraries(test_eigen ${catkin_LIBRARIES})
 
 #############
