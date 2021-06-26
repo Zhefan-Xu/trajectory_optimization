@@ -38,13 +38,17 @@ void polyTraj::loadWaypointPath(std::vector<pose> _path){
 
 
 
-Eigen::MatrixXd polyTraj::constructQ(){
+void polyTraj::constructQ(){
 	int num_path_segment = this->path.size() - 1;
 	int num_each_coeff = this->degree + 1;
 	int num_coeff = (this->degree + 1)*4;
 	int dimension = ((this->degree+1) * 4) * num_path_segment;
 	double weight_xyz = 0.5; double weight_yaw = 1 - weight_xyz;// optimization weights 
-	Eigen::MatrixXd Q (dimension, dimension);
+
+	std::vector<double> Q;
+	for (int n=0; n<dimension; ++n){
+		Q.push_back(0);
+	}
 	for (int n=0; n<num_path_segment; ++n){
 		double start_t = this->timed[n]; double end_t =  this->timed[n+1];
 
@@ -63,9 +67,9 @@ Eigen::MatrixXd polyTraj::constructQ(){
 	
 		for (int i=0; i<num_each_coeff; ++i){
 			if (i < this->diff_degree){
-				Q(x_coeff_start_index+i, x_coeff_start_index+i) = 0;
-				Q(y_coeff_start_index+i, y_coeff_start_index+i) = 0;
-				Q(z_coeff_start_index+i, z_coeff_start_index+i) = 0;
+				Q[x_coeff_start_index+i] = 0;
+				Q[y_coeff_start_index+i] = 0;
+				Q[z_coeff_start_index+i] = 0;
 			}
 			else{
 				double factor = 1;
@@ -74,21 +78,22 @@ Eigen::MatrixXd polyTraj::constructQ(){
 				}
 				factor *= 1/(i-this->diff_degree+1)* (pow(end_t, i-this->diff_degree+1) - pow(start_t, i-this->diff_degree+1));
 				factor *= weight_xyz;
-				Q(x_coeff_start_index+i, x_coeff_start_index+i) = factor;
-				Q(y_coeff_start_index+i, y_coeff_start_index+i) = factor;
-				Q(z_coeff_start_index+i, z_coeff_start_index+i) = factor;
+				Q[x_coeff_start_index+i] = factor;
+				Q[y_coeff_start_index+i] = factor;
+				Q[z_coeff_start_index+i] = factor;
 			}
 
 			if (i < 2){
-				Q(yaw_coeff_start_index+i, yaw_coeff_start_index+i) = 0; 
+				Q[yaw_coeff_start_index+i] = 0; 
 			}
 			else{
 				double factor_yaw = i * (i-1) * 1/(i-1) * (pow(end_t, i-1) - pow(start_t, i-1));
 				factor_yaw *= weight_yaw;
+				Q[yaw_coeff_start_index+i] = factor_yaw;
 			}
 		}
 	}
-	this->Q = Q;
+	this->Q_vec = Q;
 }
 
 
@@ -179,14 +184,16 @@ double polyTraj::constraint(const std::vector<double> &x, std::vector<double> &g
 
 // vairable order:[C_seg1, C_seg2, C_seg3 ...],  in each segment: [cx0, cx1, cx2,... cyawn]
 double polyTraj::objective(const std::vector<double> &x, std::vector<double> &grad, void* f_data){
-	std::vector<double> x_copy (x);
-	Eigen::Map<Eigen::VectorXd> x_vec (x_copy.data(), x_copy.size());
-	double result = x_vec.transpose() * this->Q * x_vec;
-	if (!grad.empty()){
-		Eigen::VectorXd grad_vec = this->Q * x_vec;
-		grad = std::vector<double>(grad_vec.data(), grad_vec.data() + grad_vec.size());
+	double result = 0;
+	int dimension = this->Q_vec.size();
+	for (int i=0; i<dimension; ++i){
+		result += pow(x[i],2) * this->Q_vec[i];
+		if (!grad.empty()){
+			grad[i] = x[i] * this->Q_vec[i] * 2;
+		}
 	}
-	return result ;
+	// return x[0]+x[1] + x[2] + x[3];
+	return result;
 }
 
 
@@ -196,7 +203,7 @@ double polyTraj::objective(const std::vector<double> &x, std::vector<double> &gr
 void polyTraj::optimize(){
 	int num_path_segment = this->path.size() - 1;
 	int num_variables = ((this->degree+1) * 4) * num_path_segment;
-	nlopt::opt opt(nlopt::LD_MMA, num_variables);
+	nlopt::opt opt(nlopt::GN_DIRECT_L, num_variables);
 	opt.set_min_objective(polyTraj::objectiveWrap, this);
 
 	// iterate through consraints:
@@ -216,18 +223,18 @@ void polyTraj::optimize(){
 						}
 					}
 					// set constrain here: segment only matters for 0 derivative
-					opt.add_equality_constraint(polyTraj::constraintWrap, this, 0); // constraint
+					// opt.add_equality_constraint(polyTraj::constraintWrap, this, 0); // constraint
 
 				}
 				else{
 					// set constrain here:
-					opt.add_equality_constraint(polyTraj::constraintWrap, this, 0); // constraint
+					// opt.add_equality_constraint(polyTraj::constraintWrap, this, 0); // constraint
 
 				}
 			}	
 		}
 	}
-
+	opt.set_maxeval(1);
 	std::vector<double> x(num_variables);
 	double minf;
 	try{

@@ -16,4 +16,5 @@ int main(int argc, char **argv){
 	polyTraj polytraj_optimizer;
 	polytraj_optimizer.loadWaypointPath(path);
 	polytraj_optimizer.printWaypointPath();
+	polytraj_optimizer.optimize();
 }

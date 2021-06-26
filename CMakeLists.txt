@@ -121,7 +121,6 @@ include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   ${NLOPT_INCLUDE_DIR}
-  "/opt/eigen-3.3.9"
   "/opt/nlopt-2.6.2/build"
 )
 
@@ -142,7 +141,7 @@ add_library(polyTrajGen src/polyTrajGen.cpp)
 # add_executable(${PROJECT_NAME}_node src/trajectory_optimization_node.cpp)
 add_executable(waypoint_path_vis src/waypoint_path_vis.cpp)
 add_executable(test_generate_trajectory src/test_generate_trajectory.cpp)
-add_executable(test_eigen src/test_eigen.cpp)
+# add_executable(test_eigen src/test_eigen.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -161,7 +160,7 @@ add_executable(test_eigen src/test_eigen.cpp)
 # )
 target_link_libraries(waypoint_path_vis ${catkin_LIBRARIES})
 target_link_libraries(test_generate_trajectory ${catkin_LIBRARIES} polyTrajGen   "/opt/nlopt-2.6.2/build/libnlopt.so")
-target_link_libraries(test_eigen ${catkin_LIBRARIES})
+# target_link_libraries(test_eigen ${catkin_LIBRARIES})
 
 #############
 ## Install ##
