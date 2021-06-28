@@ -144,6 +144,7 @@ double polyTraj::constraint(const std::vector<double> &x, std::vector<double> &g
  			}		
     	}
     	eqn -= target_value;
+    	cout << "eqn: " << eqn << endl;
     	return eqn;
     }
     else{
@@ -153,6 +154,26 @@ double polyTraj::constraint(const std::vector<double> &x, std::vector<double> &g
     	double eqn2 = 0;
     	start_index1 = (waypoint_index-1) * num_coeff;
     	start_index2 = waypoint_index * num_coeff;
+
+    	if (variable_index == 0){
+    		start_index1 = start_index1;
+    		start_index2 = start_index2;
+    	}
+    	else if (variable_index == 1){
+    		start_index1 = start_index1 + num_each_coeff;
+    		start_index2 = start_index2 + num_each_coeff;
+    	}
+    	else if (variable_index == 2){
+    		start_index1 = start_index1 + 2 * num_each_coeff;
+    		start_index2 = start_index2 + 2 * num_each_coeff;
+    	}
+    	else if (variable_index == 3){
+    		start_index1 = start_index1 + 3 * num_each_coeff;
+    		start_index2 = start_index2 + 3 * num_each_coeff;
+    	}
+    	else{
+    		cout << "invalid variable index" << endl;
+    	}
 
     	for (int i=0; i<num_each_coeff; ++i){
     		if (i < diff){
@@ -192,7 +213,6 @@ double polyTraj::objective(const std::vector<double> &x, std::vector<double> &gr
 			grad[i] = x[i] * this->Q_vec[i] * 2;
 		}
 	}
-	// return x[0]+x[1] + x[2] + x[3];
 	return result;
 }
 
@@ -203,44 +223,88 @@ double polyTraj::objective(const std::vector<double> &x, std::vector<double> &gr
 void polyTraj::optimize(){
 	int num_path_segment = this->path.size() - 1;
 	int num_variables = ((this->degree+1) * 4) * num_path_segment;
-	nlopt::opt opt(nlopt::GN_DIRECT_L, num_variables);
-	opt.set_min_objective(polyTraj::objectiveWrap, this);
+	nlopt::opt opt(nlopt::LN_COBYLA, num_variables);
 
+
+	opt.set_min_objective(polyTraj::objectiveWrap, this);
+	cout << "have set min objective" << endl;
+
+	int count_constaint = 0;
+	int count_diff_constraint = 0;
+	int count_zero_constraint = 0;
 	// iterate through consraints:
 	for (int w=0; w<this->path.size(); ++w){// waypoints
 		this->waypoint_index = w;
-		for (int d=0; d<=this->degree; ++d){// degree of derivatives
+		for (int d=0; d<=this->diff_degree; ++d){// degree of derivatives
 			this->diff = d;
-			for (int v=0; v<4; ++d){ // variable x y z and yaw
+			for (int v=0; v<4; ++v){ // variable x y z and yaw
 				this->variable_index = v;
 				if (d == 0){
 					if (w == 0){
 						this->segment = 1;
+						++count_constaint;
+						++count_zero_constraint;
+						cout << count_constaint << endl;
+						cout << "zero: " << count_zero_constraint << endl;
+						// set constrain here: segment only matters for 0 derivative
+						opt.add_equality_constraint(polyTraj::constraintWrap, this, 0); // constraint
+					}
+					else if (w == this->path.size()-1){
+						this->segment = 0;
+						++count_constaint;
+						++count_zero_constraint;
+						cout << count_constaint << endl;
+						cout << "zero: " << count_zero_constraint << endl;
+						// set constrain here: segment only matters for 0 derivative
+						opt.add_equality_constraint(polyTraj::constraintWrap, this, 0); // constraint
 					}
 					else{
 						for (int s=0; s<2; ++s){
 							this->segment = s;
+							++count_constaint;
+							++count_zero_constraint;
+							cout << count_constaint << endl;
+							cout << "zero: " << count_zero_constraint << endl;
+							// set constrain here: segment only matters for 0 derivative
+							// opt.add_equality_constraint(polyTraj::constraintWrap, this, 0); // constraint
 						}
 					}
 					// set constrain here: segment only matters for 0 derivative
-					// opt.add_equality_constraint(polyTraj::constraintWrap, this, 0); // constraint
+					// opt.add_equality_constraint(polyTraj::constraintWrap, this, 1e-4); // constraint
+
 
 				}
 				else{
 					// set constrain here:
-					// opt.add_equality_constraint(polyTraj::constraintWrap, this, 0); // constraint
-
+					// opt.add_equality_constraint(polyTraj::constraintWrap, this, 1e-4); // constraint
+					if ((v == 3 and d > 2) or (w == 0) or (w==this->path.size()-1)){
+						// do nothing
+					}
+					else{
+						++count_constaint;
+						++count_diff_constraint;
+						cout << count_constaint << endl;
+						cout << "diff: " << count_diff_constraint << endl;
+											// set constrain here: segment only matters for 0 derivative
+						// opt.add_equality_constraint(polyTraj::constraintWrap, this, 0); // constraint
+					}
 				}
 			}	
 		}
 	}
-	opt.set_maxeval(1);
+	opt.set_maxeval(100);
 	std::vector<double> x(num_variables);
+	cout << "size of variable: " << x.size() << endl;
 	double minf;
 	try{
+	cout << "start optimize" << endl;
     nlopt::result result = opt.optimize(x, minf);
     std::cout << "found minimum at f(" << x[0] << "," << x[1] << ") = "
         << std::setprecision(10) << minf << std::endl;
+        for (double x_coeff: x){
+        	cout << x_coeff << endl;;
+        }
+
 	}
 	catch(std::exception &e) {
 	    std::cout << "nlopt failed: " << e.what() << std::endl;
