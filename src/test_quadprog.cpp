@@ -1,10 +1,41 @@
 #include <ros/ros.h>
 #include <QuadProg++.hh>
 
-
+/*
+ File main.cc
+ 
+ This file contains just an example on how to set-up the matrices for using with
+ the solve_quadprog() function.
+ 
+ The test problem is the following:
+ 
+ Given:
+ G =  4 -2   g0^T = [6 0]
+     -2  4       
+ 
+ Solve:
+ min f(x) = 1/2 x G x + g0 x
+ s.t.
+   x_1 + x_2 = 3
+   x_1 >= 0
+   x_2 >= 0
+   x_1 + x_2 >= 2
+ 
+ The solution is x^T = [1 2] and f(x) = 12
+ 
+ Author: Luca Di Gaspero
+ DIEGM - University of Udine, Italy
+ l.digaspero@uniud.it
+ http://www.diegm.uniud.it/digaspero/
+ 
+ Copyright 2006-2009 Luca Di Gaspero
+ 
+ This software may be modified and distributed under the terms
+ of the MIT license.  See the LICENSE file for details.
+*/
 
 int main(int argc, char **argv){
-	quadprogpp::Matrix<double> G, CE, CI;
+  quadprogpp::Matrix<double> G, CE, CI;
   quadprogpp::Vector<double> g0, ce0, ci0, x;
 	int n, m, p;
 	double sum = 0.0;
@@ -19,6 +50,7 @@ int main(int argc, char **argv){
 		for (int i = 0; i < n; i++)	
 			for (int j = 0; j < n; j++)
 				is >> G[i][j] >> ch;
+				// G[i][j] = i*j;
 	}
 	
   g0.resize(n);
@@ -94,4 +126,7 @@ int main(int argc, char **argv){
 	for (int i = 0; i < n; i++)
 		sum += g0[i] * x[i];
 	std::cout << sum << std::endl;
+
+
+
 }

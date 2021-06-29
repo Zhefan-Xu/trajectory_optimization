@@ -4,25 +4,22 @@ polyTraj::polyTraj(){
 	this->degree = 6;
 	this->velocityd = 0.5;
 	this->diff_degree = 3;
-	this->constructQ();
 }
 
-polyTraj::polyTraj(int _degree){
+polyTraj::polyTraj(double _degree){
 	this->degree = _degree;
 	this->velocityd = 0.5;
 	this->diff_degree = 3;
-	this->constructQ();	
 
 }
 
-polyTraj::polyTraj(int _degree, double _velocityd, double _diff_degree){
+polyTraj::polyTraj(double _degree, double _velocityd, double _diff_degree){
 	this->degree = _degree;
 	this->velocityd = _velocityd;
 	this->diff_degree = _diff_degree;
-	this->constructQ();
 }
 
-void polyTraj::loadWaypointPath(std::vector<pose> _path){
+void polyTraj::loadWaypointPath(const std::vector<pose> &_path){
 	this->path = _path;
 	this->timed.clear();
 	double total_time = 0;
@@ -34,6 +31,7 @@ void polyTraj::loadWaypointPath(std::vector<pose> _path){
 			this->timed.push_back(total_time);
 		}
 	}
+	this->constructQ();
 }
 
 
@@ -45,10 +43,15 @@ void polyTraj::constructQ(){
 	int dimension = ((this->degree+1) * 4) * num_path_segment;
 	double weight_xyz = 0.5; double weight_yaw = 1 - weight_xyz;// optimization weights 
 
-	std::vector<double> Q;
-	for (int n=0; n<dimension; ++n){
-		Q.push_back(0);
+
+	this->Q.resize(dimension, dimension);
+
+	for (int row=0; row<dimension; ++row){
+		for (int col=0; col<dimension; ++col){
+			this->Q[row][col] = 0;
+		}
 	}
+
 	for (int n=0; n<num_path_segment; ++n){
 		double start_t = this->timed[n]; double end_t =  this->timed[n+1];
 
@@ -67,35 +70,47 @@ void polyTraj::constructQ(){
 	
 		for (int i=0; i<num_each_coeff; ++i){
 			if (i < this->diff_degree){
-				Q[x_coeff_start_index+i] = 0;
-				Q[y_coeff_start_index+i] = 0;
-				Q[z_coeff_start_index+i] = 0;
+				this->Q[x_coeff_start_index+i][x_coeff_start_index+i] = 0;
+				this->Q[y_coeff_start_index+i][y_coeff_start_index+i] = 0;
+				this->Q[z_coeff_start_index+i][z_coeff_start_index+i] = 0;
 			}
 			else{
-				double factor = 1;
+				double factor = 1.0;
+				// cout << "====" << endl;
 				for (int j=0; j<this->diff_degree; ++j){
 					factor *= (i-j);
+					// cout << factor << endl;
 				}
-				factor *= 1/(i-this->diff_degree+1)* (pow(end_t, i-this->diff_degree+1) - pow(start_t, i-this->diff_degree+1));
-				factor *= weight_xyz;
-				Q[x_coeff_start_index+i] = factor;
-				Q[y_coeff_start_index+i] = factor;
-				Q[z_coeff_start_index+i] = factor;
+				// cout << "====" << endl;
+				// cout << "t end:" << (pow(end_t, i-this->diff_degree+1))  << endl;
+				// cout << "t start:" << (pow(start_t, i-this->diff_degree+1))  << endl;
+				// cout << "t end - t start: " << (pow(end_t, i-this->diff_degree+1))  - (pow(start_t, i-this->diff_degree+1)) << endl;
+				// cout << "t end - t start * factor: " << (1.0/(i-3.0+1.0))  << endl;
+
+				factor *= (double ) 1.0/(i-this->diff_degree+1.0)* (pow(end_t, i-this->diff_degree+1) - pow(start_t, i-this->diff_degree+1));
+				this->Q[x_coeff_start_index+i][x_coeff_start_index+i] = factor;
+				this->Q[y_coeff_start_index+i][y_coeff_start_index+i] = factor;
+				this->Q[z_coeff_start_index+i][z_coeff_start_index+i] = factor;
 			}
 
 			if (i < 2){
-				Q[yaw_coeff_start_index+i] = 0; 
+				this->Q[yaw_coeff_start_index+i][yaw_coeff_start_index+i] = 0; 
 			}
 			else{
 				double factor_yaw = i * (i-1) * 1/(i-1) * (pow(end_t, i-1) - pow(start_t, i-1));
-				factor_yaw *= weight_yaw;
-				Q[yaw_coeff_start_index+i] = factor_yaw;
+				this->Q[yaw_coeff_start_index+i][yaw_coeff_start_index+i] = factor_yaw;
 			}
 		}
 	}
-	this->Q_vec = Q;
+
+	for (int i=0; i<dimension; ++i){
+		cout << this->Q[i][i] << endl;
+	}
 }
 
+void polyTraj::constructA(){
+
+}
 
 
 
