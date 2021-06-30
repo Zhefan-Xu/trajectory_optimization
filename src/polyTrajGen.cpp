@@ -41,7 +41,7 @@ void polyTraj::constructQ(){
 	int num_each_coeff = this->degree + 1;
 	int num_coeff = (this->degree + 1)*4;
 	int dimension = ((this->degree+1) * 4) * num_path_segment;
-	double weight_xyz = 0.5; double weight_yaw = 1 - weight_xyz;// optimization weights 
+	double weight_xyz = 0.5; double weight_yaw = 1 - weight_xyz; // optimization weights 
 
 
 	this->Q.resize(dimension, dimension);
@@ -87,7 +87,7 @@ void polyTraj::constructQ(){
 				// cout << "t end - t start: " << (pow(end_t, i-this->diff_degree+1))  - (pow(start_t, i-this->diff_degree+1)) << endl;
 				// cout << "t end - t start * factor: " << (1.0/(i-3.0+1.0))  << endl;
 
-				factor *= (double ) 1.0/(i-this->diff_degree+1.0)* (pow(end_t, i-this->diff_degree+1) - pow(start_t, i-this->diff_degree+1));
+				factor *= (double) 1.0/(i-this->diff_degree+1.0) * (pow(end_t, i-this->diff_degree+1) - pow(start_t, i-this->diff_degree+1));
 				this->Q[x_coeff_start_index+i][x_coeff_start_index+i] = factor;
 				this->Q[y_coeff_start_index+i][y_coeff_start_index+i] = factor;
 				this->Q[z_coeff_start_index+i][z_coeff_start_index+i] = factor;

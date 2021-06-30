@@ -127,6 +127,47 @@ int main(int argc, char **argv){
 		sum += g0[i] * x[i];
 	std::cout << sum << std::endl;
 
+	// test for matrix multiplication;
+	quadprogpp::Matrix<double> M1, M2, M3, M4;
+	quadprogpp::Vector<double> v1, v2;
+
+	M1.resize(2, 2); 
+	M2.resize(2, 2);
+
+	v1.resize(2);
+	v2.resize(2);
+
+	M1[0][0] = 1;
+	M1[0][1] = 2;
+	M1[1][0] = 3;
+	M1[1][1] = 4;
+
+	M2[0][0] = 0;
+	M2[0][1] = 1;
+	M2[1][0] = 2;
+	M2[1][1] = 3;
+
+	M3.resize(2, 1);
+	M3[0][0] = 3;
+	M3[1][0] = 5;
+
+
+
+	std::cout << M3 << std::endl;
+
+	M4.resize(2, 1);
+	M4[0][0] = 10;
+	M4[1][0] = 5;
+
+	quadprogpp::Matrix<double> M5 = quadprogpp::dot_prod(M1, M2);
+	std::cout << M5 << std::endl;
+
+
+	quadprogpp::Matrix<double> M6 = quadprogpp::t(M4);
+	std::cout << M6 << std::endl;
+
+	quadprogpp::Matrix<double> M7 = quadprogpp::dot_prod(M3, quadprogpp::t(M4));
+	std::cout << M7 << std::endl;
 
 
 }
