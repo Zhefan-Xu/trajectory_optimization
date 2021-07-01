@@ -169,5 +169,9 @@ int main(int argc, char **argv){
 	quadprogpp::Matrix<double> M7 = quadprogpp::dot_prod(M3, quadprogpp::t(M4));
 	std::cout << M7 << std::endl;
 
+	quadprogpp::Matrix<double> M8 = M7 * (double) 8;
+	std::cout << M8 << std::endl;
 
+	M8 = 0;
+	std::cout << M8 << std::endl;
 }

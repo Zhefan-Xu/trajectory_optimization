@@ -31,8 +31,11 @@ void polyTraj::loadWaypointPath(const std::vector<pose> &_path){
 			this->timed.push_back(total_time);
 		}
 	}
+
 	this->constructQ();
+	this->constructA();
 }
+
 
 
 // Variable Order: [[Cx0, Cxn, Cy0, Cyn.....], [...]]
@@ -43,14 +46,10 @@ void polyTraj::constructQ(){
 	int dimension = ((this->degree+1) * 4) * num_path_segment;
 	double weight_xyz = 0.5; double weight_yaw = 1 - weight_xyz; // optimization weights 
 
-
+	// Construct Q Matrix
 	this->Q.resize(dimension, dimension);
+	this->Q = 0;
 
-	for (int row=0; row<dimension; ++row){
-		for (int col=0; col<dimension; ++col){
-			this->Q[row][col] = 0;
-		}
-	}
 
 	for (int n=0; n<num_path_segment; ++n){
 		double start_t = this->timed[n]; double end_t =  this->timed[n+1];
@@ -67,45 +66,67 @@ void polyTraj::constructQ(){
 
 		// yaw coeff
 		int yaw_coeff_start_index = segment_start_index + 3 * num_each_coeff;
-	
+		
+
+		// Calculate Hessian Matrix:
+		quadprogpp::Matrix<double> f; // create factor matrix for x, y and z seperately
+		f.resize(num_each_coeff, 1);
 		for (int i=0; i<num_each_coeff; ++i){
 			if (i < this->diff_degree){
-				this->Q[x_coeff_start_index+i][x_coeff_start_index+i] = 0;
-				this->Q[y_coeff_start_index+i][y_coeff_start_index+i] = 0;
-				this->Q[z_coeff_start_index+i][z_coeff_start_index+i] = 0;
+				f[i][0] = 0;
 			}
 			else{
 				double factor = 1.0;
-				// cout << "====" << endl;
 				for (int j=0; j<this->diff_degree; ++j){
-					factor *= (i-j);
-					// cout << factor << endl;
+					factor *= (double) (i-j);
 				}
-				// cout << "====" << endl;
-				// cout << "t end:" << (pow(end_t, i-this->diff_degree+1))  << endl;
-				// cout << "t start:" << (pow(start_t, i-this->diff_degree+1))  << endl;
-				// cout << "t end - t start: " << (pow(end_t, i-this->diff_degree+1))  - (pow(start_t, i-this->diff_degree+1)) << endl;
-				// cout << "t end - t start * factor: " << (1.0/(i-3.0+1.0))  << endl;
-
-				factor *= (double) 1.0/(i-this->diff_degree+1.0) * (pow(end_t, i-this->diff_degree+1) - pow(start_t, i-this->diff_degree+1));
-				this->Q[x_coeff_start_index+i][x_coeff_start_index+i] = factor;
-				this->Q[y_coeff_start_index+i][y_coeff_start_index+i] = factor;
-				this->Q[z_coeff_start_index+i][z_coeff_start_index+i] = factor;
-			}
-
-			if (i < 2){
-				this->Q[yaw_coeff_start_index+i][yaw_coeff_start_index+i] = 0; 
-			}
-			else{
-				double factor_yaw = i * (i-1) * 1/(i-1) * (pow(end_t, i-1) - pow(start_t, i-1));
-				this->Q[yaw_coeff_start_index+i][yaw_coeff_start_index+i] = factor_yaw;
+				factor *= (double) (1/(i-this->diff_degree+1.0)) * (pow(end_t, i-this->diff_degree+1.0) - pow(start_t, i-this->diff_degree+1.0));
+				f[i][0] = factor;
 			}
 		}
-	}
 
-	for (int i=0; i<dimension; ++i){
-		cout << this->Q[i][i] << endl;
+		quadprogpp::Matrix<double> f_yaw; // yaw vector factor
+		f_yaw.resize(num_each_coeff, 1);
+		for (int i=0; i<num_each_coeff; ++i){
+			if (i < 2){
+				f_yaw[i][0] = 0;
+			}
+			else{
+				double factor_yaw = (double) i * (i-1.0) * (1.0/(i-1.0)) * (pow(end_t, i-1.0) - pow(start_t, i-1.0));
+				f_yaw[i][0] = factor_yaw;
+			}
+		}
+
+
+		quadprogpp::Matrix<double> H = dot_prod(f, quadprogpp::t(f)); // Hessian for x, y, z this segment
+		quadprogpp::Matrix<double> H_yaw = dot_prod(f_yaw, quadprogpp::t(f_yaw)); // Hessian for yaw this segment
+		H *= weight_xyz;
+		H_yaw *= weight_yaw;
+
+
+		// cout << "f" << f << endl;
+		// cout << "f yaw" << f_yaw << endl;
+		// cout << "H" << H << endl;
+		// cout << "H yaw" << H_yaw << endl;
+
+		// Assign value to Q:
+		for (int row=0; row<num_each_coeff; ++row){
+			for (int col=0; col<num_each_coeff; ++col){
+				this->Q[x_coeff_start_index+row][x_coeff_start_index+col] = H[row][col];
+				this->Q[y_coeff_start_index+row][y_coeff_start_index+col] = H[row][col];
+				this->Q[z_coeff_start_index+row][z_coeff_start_index+col] = H[row][col];
+				this->Q[yaw_coeff_start_index+row][yaw_coeff_start_index+col] = H_yaw[row][col];
+			}
+		}		
 	}
+	// quadprogpp::Matrix <double> test;
+	// test.resize(num_each_coeff, num_each_coeff);
+	// for (int i=0; i<7; ++i){
+	// 	for (int j=0; j<7; ++j){
+	// 		test[i][j] = this->Q[21+i][21+j];	
+	// 	}
+	// }
+	// cout << test << endl;
 }
 
 void polyTraj::constructA(){

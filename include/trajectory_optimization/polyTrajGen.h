@@ -14,7 +14,8 @@ private:
 
 
 	// the following attributes are based on Quadprog++
-	quadprogpp::Matrix<double> Q;
+	quadprogpp::Matrix<double> Q; // Hessian
+	quadprogpp::Matrix<double> A; // Linear Equality Constraint Matrix
 
 
 public:
