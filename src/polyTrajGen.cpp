@@ -32,14 +32,15 @@ void polyTraj::loadWaypointPath(const std::vector<pose> &_path){
 		}
 	}
 
-	this->constructQ();
+	this->constructQp();
 	this->constructAb();
+	this->constructCd();
 }
 
 
 
 // Variable Order: [[Cx0, Cxn, Cy0, Cyn.....], [...]]
-void polyTraj::constructQ(){
+void polyTraj::constructQp(){
 	int num_path_segment = this->path.size() - 1;
 	int num_each_coeff = this->degree + 1;
 	int num_coeff = (this->degree + 1)*4;
@@ -49,6 +50,10 @@ void polyTraj::constructQ(){
 	// Construct Q Matrix
 	this->Q.resize(dimension, dimension);
 	this->Q = 0;
+
+	// Set p vector (=0)
+	this->p.resize(dimension);
+	this->p = 0;
 
 
 	for (int n=0; n<num_path_segment; ++n){
@@ -139,7 +144,7 @@ void polyTraj::constructAb(){
 	this->A.resize(num_constraint, dimension);
 	this->b.resize(num_constraint);
 	this->A = 0; this->b = 0;
-	cout << "expected constriants: " << num_constraint << endl;
+	cout << "expected equality constriants: " << num_constraint << endl;
 
 	int count_constraints = 0;
 	for (int d=0; d<=this->diff_degree; ++d){ // derivative degrees
@@ -239,9 +244,27 @@ void polyTraj::constructAb(){
 			}
 		}
 	}
-	cout << "number of constriants: " << count_constraints << endl;
+	cout << "number of equality constriants: " << count_constraints << endl;
 }
 
+void polyTraj::constructCd(){
+	// C d is zero
+	int num_path_segment = this->path.size() - 1;
+	int dimension = ((this->degree+1) * 4) * num_path_segment;
+	this->C.resize(1, dimension);
+	this->C = 0;
+	this->d.resize(1);
+	this->d = 0;
+}
+
+void polyTraj::optimize(){
+	int num_path_segment = this->path.size() - 1;
+	int dimension = ((this->degree+1) * 4) * num_path_segment;
+
+	quadprogpp::Vector<double> x;
+	solve_quadprog(this->Q, this->p, quadprogpp::t(this->A), this->b, quadprogpp::t(this->C), this->d, x);
+	this->sol = x;
+}
 
 
 void polyTraj::printWaypointPath(){

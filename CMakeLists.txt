@@ -162,7 +162,7 @@ add_executable(test_quadprog src/test_quadprog.cpp)
 #   ${catkin_LIBRARIES}
 # )
 target_link_libraries(waypoint_path_vis ${catkin_LIBRARIES})
-target_link_libraries(test_generate_trajectory ${catkin_LIBRARIES} polyTrajGen   "/opt/nlopt-2.6.2/build/libnlopt.so")
+target_link_libraries(test_generate_trajectory ${catkin_LIBRARIES} polyTrajGen   "/usr/local/lib/libquadprog.a")
 target_link_libraries(test_quadprog ${catkin_LIBRARIES} "/usr/local/lib/libquadprog.a")
 # target_link_libraries(test_eigen ${catkin_LIBRARIES})
 
