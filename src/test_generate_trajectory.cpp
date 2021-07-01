@@ -9,7 +9,7 @@ int main(int argc, char **argv){
 	std::string filename = "/home/zhefan/catkin_ws/src/trajectory_optimization/path/waypoint_maze_complete.txt";
 	std::vector<std::vector<pose>> paths = read_waypoint_file(filename);
 
-	int test_path_index = 2;	// use index 30 for test
+	int test_path_index = 1;	// use index 30 for test
 	std::vector<pose> path = paths[test_path_index];
 
 	// Conduct optimization

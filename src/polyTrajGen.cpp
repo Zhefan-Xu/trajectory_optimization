@@ -33,7 +33,7 @@ void polyTraj::loadWaypointPath(const std::vector<pose> &_path){
 	}
 
 	this->constructQ();
-	this->constructA();
+	this->constructAb();
 }
 
 
@@ -129,8 +129,117 @@ void polyTraj::constructQ(){
 	// cout << test << endl;
 }
 
-void polyTraj::constructA(){
+void polyTraj::constructAb(){
+	int num_waypoint = this->path.size();
+	int num_constraint = (2 + (num_waypoint-2)*2) * 4 + 2 * ((num_waypoint-2) * 4) + (this->diff_degree - 2) * (num_waypoint-2) * 3;
+	int num_path_segment = this->path.size() - 1;
+	int num_each_coeff = this->degree + 1;
+	int num_coeff = (this->degree + 1)*4;
+	int dimension = ((this->degree+1) * 4) * num_path_segment;
+	this->A.resize(num_constraint, dimension);
+	this->b.resize(num_constraint);
+	this->A = 0; this->b = 0;
+	cout << "expected constriants: " << num_constraint << endl;
 
+	int count_constraints = 0;
+	for (int d=0; d<=this->diff_degree; ++d){ // derivative degrees
+		if (d == 0){
+			for (int i=0; i<num_waypoint; ++i){ // waypoints
+				double target_time = this->timed[i];
+
+				for (int s=0; s<2; ++s){ // previous or after segment
+					if (i == 0 and s == 0){
+						// do nothing: for first waypoint we don't have previous segment
+					}
+					else if (i == num_waypoint-1 and s == 1){
+						// do nothing: for last waypoint we don't have segment after
+					}
+					else{
+						for (int v=0; v<4; ++v){// variable: x, y, z, yaw
+							int start_index = (i+s-1) * num_coeff + v * num_each_coeff;
+							double target_value;
+
+							if (v == 0){
+								target_value = this->path[i].x;
+							}
+							else if (v == 1){
+								target_value = this->path[i].y;
+							}
+							else if (v == 2){
+								target_value = this->path[i].z;
+							}
+							else if (v == 3){
+								target_value = this->path[i].yaw;
+							}
+
+							for (int c=0; c<num_each_coeff; ++c){// C0 .... Cn
+								this->A[count_constraints][start_index+c] = pow(target_time, c);
+							}
+							this->b[count_constraints] = -target_value;
+							++count_constraints;
+						}
+					}
+				}
+			}
+		}
+		else{
+			for (int i=0; i<num_waypoint; ++i){
+				double target_time = this->timed[i];
+
+				if ((i == 0) or (i == num_waypoint-1)){
+					// do nothing: continuity does not apply to end points
+				}
+				else{
+					for (int v=0; v<4; ++v){
+						int start_index1 = (i-1) * num_coeff + v * num_each_coeff;
+						int start_index2 = i * num_coeff + v * num_each_coeff;
+
+						if (v == 3){
+							if (d <= 2){
+								for (int c=0; c<num_each_coeff; ++c){
+									if (c < d){
+										this->A[count_constraints][start_index1+c] = 0;
+										this->A[count_constraints][start_index2+c] = 0;
+									}
+									else{
+										double factor = 1.0;
+										for (int j=0; j<d; j++){
+											factor *= (double) (c-j);
+										}
+										factor *= pow(target_time, c-d);
+										this->A[count_constraints][start_index1+c] = factor;
+										this->A[count_constraints][start_index2+c] = -factor;
+									}
+								}
+								++count_constraints;
+								// cout << "yaw: " << count_constraints << endl;	
+							}
+						}
+						else{
+							for (int c=0; c<num_each_coeff; ++c){
+								if (c < d){
+									this->A[count_constraints][start_index1+c] = 0;
+									this->A[count_constraints][start_index2+c] = 0;
+								}
+								else{
+									double factor = 1.0;
+									for (int j=0; j<d; j++){
+										factor *= (double) (c-j);
+									}
+									factor *= pow(target_time, c-d);
+									this->A[count_constraints][start_index1+c] = factor;
+									this->A[count_constraints][start_index2+c] = -factor;
+								}
+							}
+							++count_constraints;
+							// cout << "xyz:  " << count_constraints << endl;
+						}					
+					}
+				}
+			}
+		}
+	}
+	cout << "number of constriants: " << count_constraints << endl;
 }
 
 
