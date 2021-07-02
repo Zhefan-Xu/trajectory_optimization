@@ -2,13 +2,13 @@
 
 polyTraj::polyTraj(){
 	this->degree = 6;
-	this->velocityd = 0.5;
+	this->velocityd = 1;
 	this->diff_degree = 3;
 }
 
 polyTraj::polyTraj(double _degree){
 	this->degree = _degree;
-	this->velocityd = 0.5;
+	this->velocityd = 1;
 	this->diff_degree = 3;
 
 }
@@ -105,14 +105,23 @@ void polyTraj::constructQp(){
 
 		quadprogpp::Matrix<double> H = dot_prod(f, quadprogpp::t(f)); // Hessian for x, y, z this segment
 		quadprogpp::Matrix<double> H_yaw = dot_prod(f_yaw, quadprogpp::t(f_yaw)); // Hessian for yaw this segment
+
+		// for (int i=0; i<this->diff_degree; ++i){
+		// 	H[i][i] = 0.01;
+		// }
+
+		// for (int i=0; i<2; ++i){
+		// 	H_yaw[i][i] = 0.01;
+		// }
+
 		H *= weight_xyz;
 		H_yaw *= weight_yaw;
 
 
 		// cout << "f" << f << endl;
 		// cout << "f yaw" << f_yaw << endl;
-		// cout << "H" << H << endl;
-		// cout << "H yaw" << H_yaw << endl;
+		cout << "H" << H << endl;
+		cout << "H yaw" << H_yaw << endl;
 
 		// Assign value to Q:
 		for (int row=0; row<num_each_coeff; ++row){
@@ -123,6 +132,10 @@ void polyTraj::constructQp(){
 				this->Q[yaw_coeff_start_index+row][yaw_coeff_start_index+col] = H_yaw[row][col];
 			}
 		}		
+	}
+
+	for (int i=0; i<dimension; ++i){
+		this->Q[i][i] += 0.1;
 	}
 	// quadprogpp::Matrix <double> test;
 	// test.resize(num_each_coeff, num_each_coeff);
@@ -262,7 +275,9 @@ void polyTraj::optimize(){
 	int dimension = ((this->degree+1) * 4) * num_path_segment;
 
 	quadprogpp::Vector<double> x;
-	solve_quadprog(this->Q, this->p, quadprogpp::t(this->A), this->b, quadprogpp::t(this->C), this->d, x);
+	double min_result = solve_quadprog(this->Q, this->p, quadprogpp::t(this->A), this->b, quadprogpp::t(this->C), this->d, x);
+	cout << "Min Objective: " << min_result << endl;
+	cout << "Solution: " << x << endl;
 	this->sol = x;
 }
 
