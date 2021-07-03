@@ -279,8 +279,56 @@ void polyTraj::optimize(){
 	cout << "Min Objective: " << min_result << endl;
 	cout << "Solution: " << x << endl;
 	this->sol = x;
+
 }
 
+pose polyTraj::getPose(double t){
+	int num_waypoint = this->path.size();
+	int num_constraint = (2 + (num_waypoint-2)*2) * 4 + 2 * ((num_waypoint-2) * 4) + (this->diff_degree - 2) * (num_waypoint-2) * 3;
+	int num_path_segment = this->path.size() - 1;
+	int num_each_coeff = this->degree + 1;
+	int num_coeff = (this->degree + 1)*4;
+	int dimension = ((this->degree+1) * 4) * num_path_segment;
+	
+
+	pose p;
+	for (int i=0; i<this->timed.size()-1; ++i){
+		double start_t = this->timed[i];
+		double end_t = this->timed[i+1];
+		if ((t >= start_t) and (t <= end_t)){
+			double x = 0; double y = 0; double z = 0; double yaw = 0;
+			for (int v=0; v<4; ++v){
+				int coeff_start_index = i * num_coeff + v * num_each_coeff;
+				for (int n=0; n<num_each_coeff; ++n){
+					if (v == 0){
+						x += this->sol[coeff_start_index+n] * pow(t, n);
+					}
+					else if (v == 1){
+						y += this->sol[coeff_start_index+n] * pow(t, n);
+					}
+					else if (v == 2){
+						z += this->sol[coeff_start_index+n] * pow(t, n);
+					}
+					else if (v == 3){
+						yaw += this->sol[coeff_start_index+n] * pow(t, n);
+					}
+				}
+			}
+			p.x = x; p.y = y; p.z = z; p.yaw = yaw;
+		}
+	}
+	return p;
+}
+
+std::vector<pose> polyTraj::getTrajectory(double delT){
+	this->trajectory.clear();
+	double t_final = this->timed[this->timed.size() - 1];
+	for (double t=0; t < t_final; t+=delT){
+		pose p = this->getPose(t);
+		this->trajectory.push_back(p);
+	}
+	return this->trajectory;
+}
 
 void polyTraj::printWaypointPath(){
 	cout << fixed << setprecision(2); 
@@ -300,4 +348,19 @@ void polyTraj::printWaypointPath(){
 		}
 	}
 }
+
+void polyTraj::printTrajectory(){
+	cout << fixed << setprecision(2); 
+	if (this->trajectory.size() == 0){
+		cout << "You have to optimize first!" << endl;
+	}
+	else{
+		int count = 0;
+		for (pose p: this->trajectory){
+			cout << "Pose " << count << ": (" << p.x << ", " << p.y << ", " << p.z << "), yaw: " << p.yaw << ". "<< endl;
+			++count; 
+		}
+	}
+}
+
 

@@ -24,4 +24,8 @@ int main(int argc, char **argv){
 	auto end_time = high_resolution_clock::now();
 	auto duration_total = duration_cast<microseconds>(end_time - start_time);
 	cout << "Total: "<< duration_total.count()/1e6 << " seconds. " << endl;
+
+	std::vector<pose> trajectory = polytraj_optimizer.getTrajectory(0.1);
+	polytraj_optimizer.printTrajectory();
+
 }

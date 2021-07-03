@@ -10,6 +10,7 @@ private:
 	double diff_degree;
 	double velocityd;
 	std::vector<pose> path;
+	std::vector<pose> trajectory;
 	std::vector<double> timed; // desired time for path
 
 
@@ -33,7 +34,10 @@ public:
 	void constructAb(); // Equality constraint
 	void constructCd(); // Inequality constraint
 	void optimize();
+	pose getPose(double t);
+	std::vector<pose> getTrajectory(double delT);
 	void printWaypointPath();
+	void printTrajectory();
 
 
 };
