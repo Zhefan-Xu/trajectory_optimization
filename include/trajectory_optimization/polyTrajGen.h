@@ -15,13 +15,13 @@ private:
 
 
 	// the following attributes are based on Quadprog++
-	quadprogpp::Matrix<double> Q; // Hessian
-	quadprogpp::Vector<double> p; // linear term in objective function
-	quadprogpp::Matrix<double> A; // Linear Equality Constraint Matrix
-	quadprogpp::Vector<double> b; // Linear Equality Constraint constant vector
-	quadprogpp::Matrix<double> C; // Linear Inequality Constraint Matrix
-	quadprogpp::Vector<double> d; // LInear Inequality Constraint Vector
-	quadprogpp::Vector<double> sol; // Solution
+	quadprogpp::Matrix<double> Qx, Qy, Qz, Qyaw; // Hessian
+	quadprogpp::Vector<double> px, py, pz, pyaw; // linear term in objective function
+	quadprogpp::Matrix<double> Ax, Ay, Az, Ayaw; // Linear Equality Constraint Matrix
+	quadprogpp::Vector<double> bx, by, bz, byaw; // Linear Equality Constraint constant vector
+	quadprogpp::Matrix<double> Cx, Cy, Cz, Cyaw; // Linear Inequality Constraint Matrix
+	quadprogpp::Vector<double> dx, dy, dz, dyaw; // LInear Inequality Constraint Vector
+	quadprogpp::Vector<double> x_param_sol, y_param_sol, z_param_sol, yaw_param_sol; // Solution
 
 
 

@@ -27,7 +27,7 @@ int main(int argc, char **argv){
 	cout << "Total: "<< duration_total.count()/1e6 << " seconds. " << endl;
 
 	std::vector<pose> trajectory = polytraj_optimizer.getTrajectory(0.1);
-	polytraj_optimizer.printTrajectory();
+	// polytraj_optimizer.printTrajectory();
 	visualization_msgs::MarkerArray path_msg = wrapVisMsg(path);
 	visualization_msgs::MarkerArray trajectory_msg = wrapVisMsg(trajectory);
 

@@ -40,38 +40,30 @@ void polyTraj::loadWaypointPath(const std::vector<pose> &_path){
 
 
 // Variable Order: [[Cx0, Cxn, Cy0, Cyn.....], [...]]
+// Varianle Order [Cx0_1, Cxn_1, Cx0_2], [Cy01 ....]
 void polyTraj::constructQp(){
 	int num_path_segment = this->path.size() - 1;
 	int num_each_coeff = this->degree + 1;
-	int num_coeff = (this->degree + 1)*4;
-	int dimension = ((this->degree+1) * 4) * num_path_segment;
-	double weight_xyz = 0.5; double weight_yaw = 1 - weight_xyz; // optimization weights 
+	int dimension = (this->degree+1) * num_path_segment;
 
 	// Construct Q Matrix
-	this->Q.resize(dimension, dimension);
-	this->Q = 0;
+	this->Qx.resize(dimension, dimension); this->Qx = 0;
+	this->Qy.resize(dimension, dimension); this->Qy = 0;
+	this->Qz.resize(dimension, dimension); this->Qz = 0;
+	this->Qyaw.resize(dimension, dimension); this->Qyaw = 0;
 
 	// Set p vector (=0)
-	this->p.resize(dimension);
-	this->p = 0;
+	this->px.resize(dimension);this->px = 0;
+	this->py.resize(dimension);this->py = 0;
+	this->pz.resize(dimension);this->pz = 0;
+	this->pyaw.resize(dimension);this->pyaw = 0;
+	
 
 
 	for (int n=0; n<num_path_segment; ++n){
 		double start_t = this->timed[n]; double end_t =  this->timed[n+1];
 
-		int segment_start_index = n * num_coeff;
-		// x coeff
-		int x_coeff_start_index = segment_start_index;
-
-		// y coeff
-		int y_coeff_start_index = segment_start_index + num_each_coeff;
-		
-		// z coeff
-		int z_coeff_start_index = segment_start_index + 2 * num_each_coeff;
-
-		// yaw coeff
-		int yaw_coeff_start_index = segment_start_index + 3 * num_each_coeff;
-		
+		int segment_start_index = n * num_each_coeff;
 
 		// Calculate Hessian Matrix:
 		quadprogpp::Matrix<double> f; // create factor matrix for x, y and z seperately
@@ -106,60 +98,61 @@ void polyTraj::constructQp(){
 		quadprogpp::Matrix<double> H = dot_prod(f, quadprogpp::t(f)); // Hessian for x, y, z this segment
 		quadprogpp::Matrix<double> H_yaw = dot_prod(f_yaw, quadprogpp::t(f_yaw)); // Hessian for yaw this segment
 
-		// for (int i=0; i<this->diff_degree; ++i){
-		// 	H[i][i] = 0.01;
-		// }
 
-		// for (int i=0; i<2; ++i){
-		// 	H_yaw[i][i] = 0.01;
-		// }
-
-		H *= weight_xyz;
-		H_yaw *= weight_yaw;
 
 
 		// cout << "f" << f << endl;
 		// cout << "f yaw" << f_yaw << endl;
-		cout << "H" << H << endl;
-		cout << "H yaw" << H_yaw << endl;
+		// cout << "H" << H << endl;
+		// cout << "H yaw" << H_yaw << endl;
 
 		// Assign value to Q:
 		for (int row=0; row<num_each_coeff; ++row){
 			for (int col=0; col<num_each_coeff; ++col){
-				this->Q[x_coeff_start_index+row][x_coeff_start_index+col] = H[row][col];
-				this->Q[y_coeff_start_index+row][y_coeff_start_index+col] = H[row][col];
-				this->Q[z_coeff_start_index+row][z_coeff_start_index+col] = H[row][col];
-				this->Q[yaw_coeff_start_index+row][yaw_coeff_start_index+col] = H_yaw[row][col];
+				this->Qx[segment_start_index+row][segment_start_index+col] = H[row][col];
+				this->Qy[segment_start_index+row][segment_start_index+col] = H[row][col];
+				this->Qz[segment_start_index+row][segment_start_index+col] = H[row][col];
+				this->Qyaw[segment_start_index+row][segment_start_index+col] = H_yaw[row][col];
 			}
 		}		
 	}
 
 	for (int i=0; i<dimension; ++i){
-		this->Q[i][i] += 0.1;
+		this->Qx[i][i] += 0.1;
+		this->Qy[i][i] += 0.1;
+		this->Qz[i][i] += 0.1;
+		this->Qyaw[i][i] += 0.1;
 	}
-	// quadprogpp::Matrix <double> test;
-	// test.resize(num_each_coeff, num_each_coeff);
-	// for (int i=0; i<7; ++i){
-	// 	for (int j=0; j<7; ++j){
-	// 		test[i][j] = this->Q[21+i][21+j];	
-	// 	}
-	// }
-	// cout << test << endl;
+	// cout << this->Qx << endl;
+	// cout << this->Qyaw << endl;
 }
 
 void polyTraj::constructAb(){
 	int num_waypoint = this->path.size();
 	int num_constraint = (2 + (num_waypoint-2)*2) * 4 + 2 * ((num_waypoint-2) * 4) + (this->diff_degree - 2) * (num_waypoint-2) * 3;
+
+	int num_constraint_xyz = (2 + (num_waypoint-2)*2) + ((num_waypoint-2)) * this->diff_degree; // free end xyz
+	int num_constraint_yaw =  (2 + (num_waypoint-2)*2) + ((num_waypoint-2)) * 2; // free end yaw
+
 	int num_path_segment = this->path.size() - 1;
 	int num_each_coeff = this->degree + 1;
-	int num_coeff = (this->degree + 1)*4;
-	int dimension = ((this->degree+1) * 4) * num_path_segment;
-	this->A.resize(num_constraint, dimension);
-	this->b.resize(num_constraint);
-	this->A = 0; this->b = 0;
+	int dimension = (this->degree+1) * num_path_segment;
+
+
+	this->Ax.resize(num_constraint_xyz, dimension); this->Ax = 0;
+	this->Ay.resize(num_constraint_xyz, dimension); this->Ay = 0;
+	this->Az.resize(num_constraint_xyz, dimension); this->Az = 0;
+	this->Ayaw.resize(num_constraint_yaw, dimension); this->Ayaw = 0; 
+	this->bx.resize(num_constraint_xyz); this->bx = 0;
+	this->by.resize(num_constraint_xyz); this->by = 0;
+	this->bz.resize(num_constraint_xyz); this->bz = 0;
+	this->byaw.resize(num_constraint_yaw); this->byaw = 0;
+
 	cout << "expected equality constriants: " << num_constraint << endl;
 
-	int count_constraints = 0;
+	int count_constraints = 0; // Total number of constraints
+	int count_constraints_xyz = 0;
+	int count_constraints_yaw = 0;
 	for (int d=0; d<=this->diff_degree; ++d){ // derivative degrees
 		if (d == 0){
 			for (int i=0; i<num_waypoint; ++i){ // waypoints
@@ -173,29 +166,22 @@ void polyTraj::constructAb(){
 						// do nothing: for last waypoint we don't have segment after
 					}
 					else{
-						for (int v=0; v<4; ++v){// variable: x, y, z, yaw
-							int start_index = (i+s-1) * num_coeff + v * num_each_coeff;
-							double target_value;
+						int start_index = (i+s-1) * num_each_coeff;
 
-							if (v == 0){
-								target_value = this->path[i].x;
-							}
-							else if (v == 1){
-								target_value = this->path[i].y;
-							}
-							else if (v == 2){
-								target_value = this->path[i].z;
-							}
-							else if (v == 3){
-								target_value = this->path[i].yaw;
-							}
-
-							for (int c=0; c<num_each_coeff; ++c){// C0 .... Cn
-								this->A[count_constraints][start_index+c] = pow(target_time, c);
-							}
-							this->b[count_constraints] = -target_value;
-							++count_constraints;
+						for (int c=0; c<num_each_coeff; ++c){// C0 .... Cn
+							this->Ax[count_constraints_xyz][start_index+c] = pow(target_time, c);
+							this->Ay[count_constraints_xyz][start_index+c] = pow(target_time, c);
+							this->Az[count_constraints_xyz][start_index+c] = pow(target_time, c);
+							this->Ayaw[count_constraints_yaw][start_index+c] = pow(target_time, c);
 						}
+						this->bx[count_constraints_xyz] = -this->path[i].x;
+						this->by[count_constraints_xyz] = -this->path[i].y;
+						this->bz[count_constraints_xyz] = -this->path[i].z;
+						this->byaw[count_constraints_yaw] = -this->path[i].yaw;
+						count_constraints += 4;
+						++count_constraints_xyz;
+						++count_constraints_yaw;
+						
 					}
 				}
 			}
@@ -208,36 +194,42 @@ void polyTraj::constructAb(){
 					// do nothing: continuity does not apply to end points
 				}
 				else{
-					for (int v=0; v<4; ++v){
-						int start_index1 = (i-1) * num_coeff + v * num_each_coeff;
-						int start_index2 = i * num_coeff + v * num_each_coeff;
+					int start_index1 = (i-1) * num_each_coeff;
+					int start_index2 = i * num_each_coeff;
 
-						if (v == 3){
-							if (d <= 2){
-								for (int c=0; c<num_each_coeff; ++c){
-									if (c < d){
-										this->A[count_constraints][start_index1+c] = 0;
-										this->A[count_constraints][start_index2+c] = 0;
-									}
-									else{
-										double factor = 1.0;
-										for (int j=0; j<d; j++){
-											factor *= (double) (c-j);
-										}
-										factor *= pow(target_time, c-d);
-										this->A[count_constraints][start_index1+c] = factor;
-										this->A[count_constraints][start_index2+c] = -factor;
-									}
-								}
-								++count_constraints;
-								// cout << "yaw: " << count_constraints << endl;	
-							}
+					for (int c=0; c<num_each_coeff; ++c){
+						if (c < d){
+							this->Ax[count_constraints_xyz][start_index1+c] = 0;
+							this->Ax[count_constraints_xyz][start_index2+c] = 0;
+							this->Ay[count_constraints_xyz][start_index1+c] = 0;
+							this->Ay[count_constraints_xyz][start_index2+c] = 0;
+							this->Az[count_constraints_xyz][start_index1+c] = 0;
+							this->Az[count_constraints_xyz][start_index2+c] = 0;
 						}
 						else{
-							for (int c=0; c<num_each_coeff; ++c){
+							double factor = 1.0;
+							for (int j=0; j<d; j++){
+								factor *= (double) (c-j);
+							}
+							factor *= pow(target_time, c-d);
+							this->Ax[count_constraints_xyz][start_index1+c] = factor;
+							this->Ax[count_constraints_xyz][start_index2+c] = -factor;
+							this->Ay[count_constraints_xyz][start_index1+c] = factor;
+							this->Ay[count_constraints_xyz][start_index2+c] = -factor;
+							this->Az[count_constraints_xyz][start_index1+c] = factor;
+							this->Az[count_constraints_xyz][start_index2+c] = -factor;
+							
+						}
+					}
+
+					++count_constraints_xyz;
+					count_constraints += 3;
+
+					if (d <= 2){
+						for (int c=0; c<num_each_coeff; ++c){
 								if (c < d){
-									this->A[count_constraints][start_index1+c] = 0;
-									this->A[count_constraints][start_index2+c] = 0;
+									this->Ayaw[count_constraints_yaw][start_index1+c] = 0;
+									this->Ayaw[count_constraints_yaw][start_index2+c] = 0;
 								}
 								else{
 									double factor = 1.0;
@@ -245,14 +237,14 @@ void polyTraj::constructAb(){
 										factor *= (double) (c-j);
 									}
 									factor *= pow(target_time, c-d);
-									this->A[count_constraints][start_index1+c] = factor;
-									this->A[count_constraints][start_index2+c] = -factor;
+									this->Ayaw[count_constraints_yaw][start_index1+c] = factor;
+									this->Ayaw[count_constraints_yaw][start_index2+c] = -factor;
 								}
-							}
-							++count_constraints;
-							// cout << "xyz:  " << count_constraints << endl;
-						}					
+						}
+						++count_constraints_yaw;
+						++count_constraints;
 					}
+
 				}
 			}
 		}
@@ -263,57 +255,53 @@ void polyTraj::constructAb(){
 void polyTraj::constructCd(){
 	// C d is zero
 	int num_path_segment = this->path.size() - 1;
-	int dimension = ((this->degree+1) * 4) * num_path_segment;
-	this->C.resize(1, dimension);
-	this->C = 0;
-	this->d.resize(1);
-	this->d = 0;
+	int dimension = (this->degree+1) * num_path_segment;
+	this->Cx.resize(1, dimension); this->Cx = 0;
+	this->Cy.resize(1, dimension); this->Cy = 0;
+	this->Cz.resize(1, dimension); this->Cz = 0;
+	this->Cyaw.resize(1, dimension); this->Cyaw = 0;
+
+	this->dx.resize(1);this->dx = 0;
+	this->dy.resize(1);this->dy = 0;
+	this->dz.resize(1);this->dz = 0;
+	this->dyaw.resize(1);this->dyaw = 0;
+	
 }
 
 void polyTraj::optimize(){
 	int num_path_segment = this->path.size() - 1;
 	int dimension = ((this->degree+1) * 4) * num_path_segment;
 
-	quadprogpp::Vector<double> x;
-	double min_result = solve_quadprog(this->Q, this->p, quadprogpp::t(this->A), this->b, quadprogpp::t(this->C), this->d, x);
-	cout << "Min Objective: " << min_result << endl;
-	cout << "Solution: " << x << endl;
-	this->sol = x;
+	quadprogpp::Vector<double> x_param, y_param, z_param, yaw_param;
+	double min_result_x = solve_quadprog(this->Qx, this->px, quadprogpp::t(this->Ax), this->bx, quadprogpp::t(this->Cx), this->dx, x_param);
+	double min_result_y = solve_quadprog(this->Qy, this->py, quadprogpp::t(this->Ay), this->by, quadprogpp::t(this->Cy), this->dy, y_param);
+	double min_result_z = solve_quadprog(this->Qz, this->pz, quadprogpp::t(this->Az), this->bz, quadprogpp::t(this->Cz), this->dz, z_param);
+	double min_result_yaw = solve_quadprog(this->Qyaw, this->pyaw, quadprogpp::t(this->Ayaw), this->byaw, quadprogpp::t(this->Cyaw), this->dyaw, yaw_param);
+
+	this->x_param_sol = x_param;
+	this->y_param_sol = y_param;
+	this->z_param_sol = z_param;
+	this->yaw_param_sol = yaw_param;
 
 }
 
 pose polyTraj::getPose(double t){
-	int num_waypoint = this->path.size();
-	int num_constraint = (2 + (num_waypoint-2)*2) * 4 + 2 * ((num_waypoint-2) * 4) + (this->diff_degree - 2) * (num_waypoint-2) * 3;
-	int num_path_segment = this->path.size() - 1;
 	int num_each_coeff = this->degree + 1;
-	int num_coeff = (this->degree + 1)*4;
-	int dimension = ((this->degree+1) * 4) * num_path_segment;
 	
-
 	pose p;
 	for (int i=0; i<this->timed.size()-1; ++i){
 		double start_t = this->timed[i];
 		double end_t = this->timed[i+1];
 		if ((t >= start_t) and (t <= end_t)){
+			int coeff_start_index = i*num_each_coeff;
 			double x = 0; double y = 0; double z = 0; double yaw = 0;
-			for (int v=0; v<4; ++v){
-				int coeff_start_index = i * num_coeff + v * num_each_coeff;
-				for (int n=0; n<num_each_coeff; ++n){
-					if (v == 0){
-						x += this->sol[coeff_start_index+n] * pow(t, n);
-					}
-					else if (v == 1){
-						y += this->sol[coeff_start_index+n] * pow(t, n);
-					}
-					else if (v == 2){
-						z += this->sol[coeff_start_index+n] * pow(t, n);
-					}
-					else if (v == 3){
-						yaw += this->sol[coeff_start_index+n] * pow(t, n);
-					}
-				}
+			for (int n=0; n<num_each_coeff; ++n){
+				x += this->x_param_sol[coeff_start_index+n] * pow(t, n);
+				y += this->y_param_sol[coeff_start_index+n] * pow(t, n);
+				z += this->z_param_sol[coeff_start_index+n] * pow(t, n);
+				yaw += this->yaw_param_sol[coeff_start_index+n] * pow(t, n);
 			}
+
 			p.x = x; p.y = y; p.z = z; p.yaw = yaw;
 		}
 	}
