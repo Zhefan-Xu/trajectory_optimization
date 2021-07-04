@@ -50,13 +50,11 @@ void polyTraj::constructQp(){
 	this->Qx.resize(dimension, dimension); this->Qx = 0;
 	this->Qy.resize(dimension, dimension); this->Qy = 0;
 	this->Qz.resize(dimension, dimension); this->Qz = 0;
-	this->Qyaw.resize(dimension, dimension); this->Qyaw = 0;
 
 	// Set p vector (=0)
 	this->px.resize(dimension);this->px = 0;
 	this->py.resize(dimension);this->py = 0;
 	this->pz.resize(dimension);this->pz = 0;
-	this->pyaw.resize(dimension);this->pyaw = 0;
 	
 
 
@@ -82,26 +80,10 @@ void polyTraj::constructQp(){
 			}
 		}
 
-		quadprogpp::Matrix<double> f_yaw; // yaw vector factor
-		f_yaw.resize(num_each_coeff, 1);
-		for (int i=0; i<num_each_coeff; ++i){
-			if (i < 2){
-				f_yaw[i][0] = 0;
-			}
-			else{
-				double factor_yaw = (double) i * (i-1.0) * (1.0/(i-1.0)) * (pow(end_t, i-1.0) - pow(start_t, i-1.0));
-				f_yaw[i][0] = factor_yaw;
-			}
-		}
-
-
 		quadprogpp::Matrix<double> H = dot_prod(f, quadprogpp::t(f)); // Hessian for x, y, z this segment
-		quadprogpp::Matrix<double> H_yaw = dot_prod(f_yaw, quadprogpp::t(f_yaw)); // Hessian for yaw this segment
 
 		// cout << "f" << f << endl;
-		// cout << "f yaw" << f_yaw << endl;
 		// cout << "H" << H << endl;
-		// cout << "H yaw" << H_yaw << endl;
 
 		// Assign value to Q:
 		for (int row=0; row<num_each_coeff; ++row){
@@ -109,7 +91,6 @@ void polyTraj::constructQp(){
 				this->Qx[segment_start_index+row][segment_start_index+col] = H[row][col];
 				this->Qy[segment_start_index+row][segment_start_index+col] = H[row][col];
 				this->Qz[segment_start_index+row][segment_start_index+col] = H[row][col];
-				this->Qyaw[segment_start_index+row][segment_start_index+col] = H_yaw[row][col];
 			}
 		}		
 	}
@@ -119,7 +100,6 @@ void polyTraj::constructQp(){
 		this->Qx[i][i] += perturb;
 		this->Qy[i][i] += perturb;
 		this->Qz[i][i] += perturb;
-		this->Qyaw[i][i] += perturb;
 	}
 	// cout << this->Qx << endl;
 	// cout << this->Qyaw << endl;
@@ -127,10 +107,9 @@ void polyTraj::constructQp(){
 
 void polyTraj::constructAb(){
 	int num_waypoint = this->path.size();
-	int num_constraint = (2 + (num_waypoint-2)*2) * 4 + 2 * ((num_waypoint - 2) * 4) + (this->diff_degree - 2) * (num_waypoint - 2) * 3 + 2*4;
+	int num_constraint = (2 + (num_waypoint-2)*2) * 3 + 2 * ((num_waypoint - 2) * 3) + (this->diff_degree - 2) * (num_waypoint - 2) * 3 + 2*4;
 
 	int num_constraint_xyz = (2 + (num_waypoint-2)*2) + ((num_waypoint-2)) * this->diff_degree + 2; // zero velocity/acc end xyz
-	int num_constraint_yaw =  (2 + (num_waypoint-2)*2) + ((num_waypoint-2)) * 2 + 2; // zero velocity/acc end yaw
 
 	int num_path_segment = this->path.size() - 1;
 	int num_each_coeff = this->degree + 1;
@@ -140,17 +119,14 @@ void polyTraj::constructAb(){
 	this->Ax.resize(num_constraint_xyz, dimension); this->Ax = 0;
 	this->Ay.resize(num_constraint_xyz, dimension); this->Ay = 0;
 	this->Az.resize(num_constraint_xyz, dimension); this->Az = 0;
-	this->Ayaw.resize(num_constraint_yaw, dimension); this->Ayaw = 0; 
 	this->bx.resize(num_constraint_xyz); this->bx = 0;
 	this->by.resize(num_constraint_xyz); this->by = 0;
 	this->bz.resize(num_constraint_xyz); this->bz = 0;
-	this->byaw.resize(num_constraint_yaw); this->byaw = 0;
 
 	cout << "expected equality constriants: " << num_constraint << endl;
 
 	int count_constraints = 0; // Total number of constraints
 	int count_constraints_xyz = 0;
-	int count_constraints_yaw = 0;
 	for (int d=0; d<=this->diff_degree; ++d){ // derivative degrees
 		if (d == 0){
 			for (int i=0; i<num_waypoint; ++i){ // waypoints
@@ -170,16 +146,12 @@ void polyTraj::constructAb(){
 							this->Ax[count_constraints_xyz][start_index+c] = pow(target_time, c);
 							this->Ay[count_constraints_xyz][start_index+c] = pow(target_time, c);
 							this->Az[count_constraints_xyz][start_index+c] = pow(target_time, c);
-							this->Ayaw[count_constraints_yaw][start_index+c] = pow(target_time, c);
 						}
 						this->bx[count_constraints_xyz] = -this->path[i].x;
 						this->by[count_constraints_xyz] = -this->path[i].y;
 						this->bz[count_constraints_xyz] = -this->path[i].z;
-						this->byaw[count_constraints_yaw] = -this->path[i].yaw;
-						count_constraints += 4;
-						++count_constraints_xyz;
-						++count_constraints_yaw;
-						
+						count_constraints += 3;
+						++count_constraints_xyz;						
 					}
 				}
 			}
@@ -223,26 +195,6 @@ void polyTraj::constructAb(){
 					++count_constraints_xyz;
 					count_constraints += 3;
 
-					if (d <= 2){
-						for (int c=0; c<num_each_coeff; ++c){
-								if (c < d){
-									this->Ayaw[count_constraints_yaw][start_index1+c] = 0;
-									this->Ayaw[count_constraints_yaw][start_index2+c] = 0;
-								}
-								else{
-									double factor = 1.0;
-									for (int j=0; j<d; j++){
-										factor *= (double) (c-j);
-									}
-									factor *= pow(target_time, c-d);
-									this->Ayaw[count_constraints_yaw][start_index1+c] = factor;
-									this->Ayaw[count_constraints_yaw][start_index2+c] = -factor;
-								}
-						}
-						++count_constraints_yaw;
-						++count_constraints;
-					}
-
 				}
 			}
 		}
@@ -269,7 +221,6 @@ void polyTraj::constructAb(){
 					this->Ax[count_constraints_xyz][end_index+c] = 0;
 					this->Ay[count_constraints_xyz][end_index+c] = 0;
 					this->Az[count_constraints_xyz][end_index+c] = 0;
-					this->Ayaw[count_constraints_yaw][end_index+c] = 0;
 				}
 				else{
 					double factor = 1.0;
@@ -280,15 +231,13 @@ void polyTraj::constructAb(){
 					this->Ax[count_constraints_xyz][end_index+c] = factor;
 					this->Ay[count_constraints_xyz][end_index+c] = factor;
 					this->Az[count_constraints_xyz][end_index+c] = factor;
-					this->Ayaw[count_constraints_yaw][end_index+c] = factor;
 				}
 
 			}
 		}
 
 		++count_constraints_xyz;
-		++count_constraints_yaw;
-		count_constraints += 4;
+		count_constraints += 3;
 	}	
 
 	cout << "number of equality constraints: " << count_constraints << endl;
@@ -301,12 +250,10 @@ void polyTraj::constructCd(){
 	this->Cx.resize(1, dimension); this->Cx = 0;
 	this->Cy.resize(1, dimension); this->Cy = 0;
 	this->Cz.resize(1, dimension); this->Cz = 0;
-	this->Cyaw.resize(1, dimension); this->Cyaw = 0;
 
 	this->dx.resize(1);this->dx = 0;
 	this->dy.resize(1);this->dy = 0;
 	this->dz.resize(1);this->dz = 0;
-	this->dyaw.resize(1);this->dyaw = 0;
 	
 }
 
@@ -318,21 +265,16 @@ void polyTraj::optimize(){
 	double min_result_x = solve_quadprog(this->Qx, this->px, quadprogpp::t(this->Ax), this->bx, quadprogpp::t(this->Cx), this->dx, x_param);
 	double min_result_y = solve_quadprog(this->Qy, this->py, quadprogpp::t(this->Ay), this->by, quadprogpp::t(this->Cy), this->dy, y_param);
 	double min_result_z = solve_quadprog(this->Qz, this->pz, quadprogpp::t(this->Az), this->bz, quadprogpp::t(this->Cz), this->dz, z_param);
-	double min_result_yaw = solve_quadprog(this->Qyaw, this->pyaw, quadprogpp::t(this->Ayaw), this->byaw, quadprogpp::t(this->Cyaw), this->dyaw, yaw_param);
 
 	this->x_param_sol = x_param;
 	this->y_param_sol = y_param;
 	this->z_param_sol = z_param;
-	this->yaw_param_sol = yaw_param;
-
-	cout << x_param << endl;
-
 }
 
 pose polyTraj::getPose(double t){
-	int num_each_coeff = this->degree + 1;
-	
+	int num_each_coeff = this->degree + 1;	
 	pose p;
+
 	for (int i=0; i<this->timed.size()-1; ++i){
 		double start_t = this->timed[i];
 		double end_t = this->timed[i+1];
@@ -343,9 +285,18 @@ pose polyTraj::getPose(double t){
 				x += this->x_param_sol[coeff_start_index+n] * pow(t, n);
 				y += this->y_param_sol[coeff_start_index+n] * pow(t, n);
 				z += this->z_param_sol[coeff_start_index+n] * pow(t, n);
-				yaw += this->yaw_param_sol[coeff_start_index+n] * pow(t, n);
 			}
+			// make yaw the atan2 of derivative of x and y
+			double dx = 0; double dy = 0;
+			for (int n=1; n<num_each_coeff; ++n){
+				dx += n * x_param_sol[coeff_start_index+n] * pow(t, n-1);
+				dy += n * y_param_sol[coeff_start_index+n] * pow(t, n-1);
+			}
+			yaw = atan2(dy, dx);
 
+			if (t == 0){
+				yaw = this->path[0].yaw;
+			}
 			p.x = x; p.y = y; p.z = z; p.yaw = yaw;
 		}
 	}
