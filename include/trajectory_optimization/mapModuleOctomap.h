@@ -9,16 +9,21 @@
 
 
 using namespace octomap;
+using namespace std;
 
 class mapModule{
 private:
 	ros::NodeHandle nh;
 	ros::ServiceClient octomap_client;
 	OcTree* tree_ptr;
+	AbstractOcTree* abtree;
+	double res;
 
 public:
 	mapModule(const ros::NodeHandle& _nh);
-	void updateMap();
+	mapModule(const ros::NodeHandle& _nh, double _res);
+	void updateMap(); // update tree_ptr
+	double getMapResolution();
 
 };
 
