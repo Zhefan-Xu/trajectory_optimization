@@ -33,10 +33,6 @@ double rpy_from_quaternion(geometry_msgs::Quaternion quat){
 	tf2::convert(quat, tf_quat);
 	double roll, pitch, yaw;
 	tf2::Matrix3x3(tf_quat).getRPY(roll, pitch, yaw);
-	// in the planner, the angle is [0, 2pi] instead of [-pi, pi]
-	// if (yaw < 0){
-	// 	yaw = 2 * PI_const - (-yaw);
-	// }
 	return yaw;
 }
 
