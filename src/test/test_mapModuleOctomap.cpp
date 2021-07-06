@@ -22,10 +22,10 @@ int main(int argc, char** argv){
 
 	std::string filename = "/home/zhefan/catkin_ws/src/trajectory_optimization/path/waypoint_maze_complete.txt";
 	std::vector<std::vector<pose>> paths = read_waypoint_file(filename);
-	std::vector<pose> path = paths[37];
+	std::vector<pose> path = paths[29];
 
 	std::vector<pose> path_sc = m.shortcutWaypointPath(path);
-	polyTraj polytraj_optimizer (6, 1, 3);
+	polyTraj polytraj_optimizer (6, 1, 4);
 	polytraj_optimizer.loadWaypointPath(path_sc);
 	polytraj_optimizer.printWaypointPath();
 	auto start_time1 = high_resolution_clock::now();
@@ -36,6 +36,11 @@ int main(int argc, char** argv){
 
 	std::vector<pose> trajectory = polytraj_optimizer.getTrajectory(0.1);
 	// polytraj_optimizer.printTrajectory();
+	std::vector<int> collision_idx;
+	bool valid = m.checkCollisionTrajectory(trajectory, collision_idx);
+	cout << "Trajectory is valid? " << valid << endl;
+
+
 	visualization_msgs::MarkerArray path_msg = wrapVisMsg(path_sc);
 	visualization_msgs::MarkerArray trajectory_msg = wrapVisMsg(trajectory);
 

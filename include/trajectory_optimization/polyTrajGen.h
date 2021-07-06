@@ -29,6 +29,9 @@ public:
 	polyTraj();
 	polyTraj(double _degree);
 	polyTraj(double _degree, double _velocityd, double _diff_degree);
+	void adjustWaypoint(const std::vector<int> &collision_idx, double delT);
+	std::vector<int> findCollisionSegment(const std::vector<int> &collision_idx, double delT);
+	std::vector<pose> getAddPose(const std::vector<int>& collision_seg);
 	void loadWaypointPath(const std::vector<pose> &_path);
 	void constructQp(); // Hessian Matrix and linear vector
 	void constructAb(); // Equality constraint

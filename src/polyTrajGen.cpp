@@ -19,6 +19,28 @@ polyTraj::polyTraj(double _degree, double _velocityd, double _diff_degree){
 	this->diff_degree = _diff_degree;
 }
 
+
+void polyTraj::adjustWaypoint(const std::vector<int> &collision_idx, double delT){
+	double collision_time;
+	for (int idx: collision_idx){
+		collision_time = delT * (double) idx;
+	}
+}
+
+std::vector<int> polyTraj::findCollisionSegment(const std::vector<int> &collision_idx, double delT){
+	// TODO: return start index of collision segment
+	std::vector<int> collision_seg;
+	return collision_seg;
+}
+
+
+std::vector<pose> polyTraj::getAddPose(const std::vector<int>& collision_seg){
+	// TODO: add poses
+	std::vector<pose> addPose;
+	return addPose;
+}
+
+
 void polyTraj::loadWaypointPath(const std::vector<pose> &_path){
 	this->path = _path;
 	this->timed.clear();

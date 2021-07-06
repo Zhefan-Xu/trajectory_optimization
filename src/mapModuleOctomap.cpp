@@ -72,13 +72,17 @@ bool mapModule::checkCollisionRobot(pose p){
 	return this->checkCollisionRobot(p_point3d);
 }
 
-bool mapModule::checkCollisionTrajectory(std::vector<pose> trajectory, std::vector<pose>& collision_poses, int& collision_idx){
+bool mapModule::checkCollisionTrajectory(std::vector<pose> trajectory, std::vector<int>& collision_idx){
+	bool valid = true;
+	int count = 0;
 	for (pose p: trajectory){
 		if (!this->checkCollisionRobot(p)){
-			return false;
+			valid = false;
+			collision_idx.push_back(count);
 		}
+		++count;
 	}
-	return true;
+	return valid;
 }
 
 bool mapModule::checkCollisionLine(point3d p1, point3d p2){

@@ -32,7 +32,7 @@ public:
 	bool checkCollision(pose p); //check point collision
 	bool checkCollisionRobot(point3d p); // collision check for robot
 	bool checkCollisionRobot(pose p); // collision check for robot
-	bool checkCollisionTrajectory(std::vector<pose> trajectory, std::vector<pose>& collision_poses, int& collision_idx);
+	bool checkCollisionTrajectory(std::vector<pose> trajectory, std::vector<int>& collision_idx);
 	bool checkCollisionLine(point3d p1, point3d p2);
 	bool checkCollisionLine(pose p1, pose p2);
 	std::vector<pose> shortcutWaypointPath(std::vector<pose> path);
