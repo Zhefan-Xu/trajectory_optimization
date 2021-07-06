@@ -35,6 +35,7 @@ void mapModule::updateMap(){
 
 
 bool mapModule::checkCollision(point3d p){
+	//True: no collision, False: collision
 	OcTreeNode* nptr = tree_ptr->search(p);
 	if (nptr == NULL){return false;}
 	return !(tree_ptr->isNodeOccupied(nptr));
@@ -46,7 +47,23 @@ bool mapModule::checkCollision(pose p){
 }
 
 bool mapModule::checkCollisionRobot(point3d p){
-	// TODO
+	double xmin, xmax, ymin, ymax, zmin, zmax; // bounding box for collision checking
+	xmin = p.x() - xsize/2; xmax = p.x() + xsize/2;
+	ymin = p.y() - ysize/2; ymax = p.y() + ysize/2;
+	zmin = p.z() - zsize/2; zmax = p.z() + zsize/2;
+
+	for (double x=xmin; x<xmax; x+=res){
+		for (double y=ymin; y<ymax; y+=res){
+			for (double z=zmin; z<zmax; z+=res){
+				if (this->checkCollision(point3d (x, y, z))){
+					// do nothing
+				}
+				else{
+					return false;
+				}
+			}
+		}
+	}
 	return true;
 }
 
@@ -56,12 +73,23 @@ bool mapModule::checkCollisionRobot(pose p){
 }
 
 bool mapModule::checkCollisionTrajectory(std::vector<pose> trajectory, std::vector<pose>& collision_poses, int& collision_idx){
-	// TODO
+	for (pose p: trajectory){
+		if (!this->checkCollisionRobot(p)){
+			return false;
+		}
+	}
 	return true;
 }
 
 bool mapModule::checkCollisionLine(point3d p1, point3d p2){
-	// TODO
+	// True: no collision; False: collision
+	std::vector<point3d> ray;
+	tree_ptr->computeRay(p1, p2, ray);
+	for (point3d p: ray){
+		if (!this->checkCollisionRobot(p)){
+			return false;
+		}
+	}
 	return true;
 }
 
@@ -72,8 +100,23 @@ bool mapModule::checkCollisionLine(pose p1, pose p2){
 }
 
 std::vector<pose> mapModule::shortcutWaypointPath(std::vector<pose> path){
-	// TODO
 	std::vector<pose> path_sc;
+	int ptr1 = 0; int ptr2 = 1;
+	path_sc.push_back(path[ptr1]);
+	while (true and ros::ok()){
+		pose p1 = path[ptr1]; pose p2 = path[ptr2];
+		if (checkCollisionLine(p1, p2)){
+			if (ptr2 >= path.size()-1){
+				path_sc.push_back(p2);
+				break;
+			}
+			++ptr2;
+		}
+		else{
+			path_sc.push_back(path[ptr2-1]);
+			ptr1 = ptr2-1;
+		}
+	}
 	return path_sc;
 }
 

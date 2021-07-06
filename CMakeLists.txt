@@ -162,10 +162,11 @@ add_executable(test_mapModuleOctomap src/test/test_mapModuleOctomap.cpp)
 #   ${catkin_LIBRARIES}
 # )
 target_link_libraries(waypoint_path_vis ${catkin_LIBRARIES})
-target_link_libraries(test_generate_trajectory ${catkin_LIBRARIES} polyTrajGen   "/usr/local/lib/libquadprog.a")
+target_link_libraries(polyTrajGen "/usr/local/lib/libquadprog.a")
+target_link_libraries(test_generate_trajectory ${catkin_LIBRARIES} polyTrajGen)
 target_link_libraries(test_quadprog ${catkin_LIBRARIES} "/usr/local/lib/libquadprog.a")
 target_link_libraries(mapModuleOctomap ${catkin_LIBRARIES})
-target_link_libraries(test_mapModuleOctomap ${catkin_LIBRARIES} mapModuleOctomap)
+target_link_libraries(test_mapModuleOctomap ${catkin_LIBRARIES} mapModuleOctomap polyTrajGen)
 # target_link_libraries(test_eigen ${catkin_LIBRARIES})
 
 #############
