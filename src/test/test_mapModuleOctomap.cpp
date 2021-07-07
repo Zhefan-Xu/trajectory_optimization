@@ -10,7 +10,7 @@ using namespace std::chrono;
 int main(int argc, char** argv){
 	ros::init(argc, argv, "test_mapModuleOctomap_node");
 	ros::NodeHandle nh;
-	mapModule m (nh, 0.1, 0.3, 0.3, 0.1);
+	mapModule m (nh, 0.1, 0.2, 0.2, 0.1);
 
 	auto start_time = high_resolution_clock::now();
 	m.updateMap();
@@ -22,7 +22,7 @@ int main(int argc, char** argv){
 
 	std::string filename = "/home/zhefan/catkin_ws/src/trajectory_optimization/path/waypoint_maze_complete.txt";
 	std::vector<std::vector<pose>> paths = read_waypoint_file(filename);
-	std::vector<pose> path = paths[29];
+	std::vector<pose> path = paths[37];
 
 	std::vector<pose> path_sc = m.shortcutWaypointPath(path);
 	polyTraj polytraj_optimizer (6, 1, 4);
@@ -40,8 +40,37 @@ int main(int argc, char** argv){
 	bool valid = m.checkCollisionTrajectory(trajectory, collision_idx);
 	cout << "Trajectory is valid? " << valid << endl;
 
+	polytraj_optimizer.adjustWaypoint(collision_idx, 0.1);
+	auto start_time2 = high_resolution_clock::now();
+	polytraj_optimizer.optimize();
+	auto end_time2 = high_resolution_clock::now();
+	auto duration_total2 = duration_cast<microseconds>(end_time2 - start_time2);
+	cout << "Total Trajectory Opimtization: "<< duration_total2.count()/1e6 << " seconds. " << endl;
+	trajectory = polytraj_optimizer.getTrajectory(0.1);
+	valid = m.checkCollisionTrajectory(trajectory, collision_idx);
+	cout << "Trajectory is valid? " << valid << endl;
 
-	visualization_msgs::MarkerArray path_msg = wrapVisMsg(path_sc);
+	polytraj_optimizer.adjustWaypoint(collision_idx, 0.1);
+	auto start_time3 = high_resolution_clock::now();
+	polytraj_optimizer.optimize();
+	auto end_time3 = high_resolution_clock::now();
+	auto duration_total3 = duration_cast<microseconds>(end_time3 - start_time3);
+	cout << "Total Trajectory Opimtization: "<< duration_total3.count()/1e6 << " seconds. " << endl;
+	trajectory = polytraj_optimizer.getTrajectory(0.1);
+	valid = m.checkCollisionTrajectory(trajectory, collision_idx);
+	cout << "Trajectory is valid? " << valid << endl;
+
+	// polytraj_optimizer.adjustWaypoint(collision_idx, 0.1);
+	// auto start_time4 = high_resolution_clock::now();
+	// polytraj_optimizer.optimize();
+	// auto end_time4 = high_resolution_clock::now();
+	// auto duration_total4 = duration_cast<microseconds>(end_time4 - start_time4);
+	// cout << "Total Trajectory Opimtization: "<< duration_total4.count()/1e6 << " seconds. " << endl;
+	// trajectory = polytraj_optimizer.getTrajectory(0.1);
+	// valid = m.checkCollisionTrajectory(trajectory, collision_idx);
+	// cout << "Trajectory is valid? " << valid << endl;
+
+	visualization_msgs::MarkerArray path_msg = wrapVisMsg(polytraj_optimizer.getWaypointPath());
 	visualization_msgs::MarkerArray trajectory_msg = wrapVisMsg(trajectory);
 
 	ros::Publisher path_vis_pub = nh.advertise<visualization_msgs::MarkerArray>("waypoint_path", 0);

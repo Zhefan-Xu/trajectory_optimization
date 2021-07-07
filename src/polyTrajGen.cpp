@@ -21,23 +21,56 @@ polyTraj::polyTraj(double _degree, double _velocityd, double _diff_degree){
 
 
 void polyTraj::adjustWaypoint(const std::vector<int> &collision_idx, double delT){
+	std::set<int> collision_seg = this->findCollisionSegment(collision_idx, delT);
+	std::vector<pose> path_add = this->getAddPath(collision_seg);
+
+	this->path = path_add;
+
+	this->timed.clear();
+	double total_time = 0;
+	this->timed.push_back(total_time);
+	for (int i=0; i<this->path.size(); ++i){ // calculate desired time for each segment
+		if (i != 0){
+			double distance = getDistance(this->path[i], this->path[i-1]);
+			total_time += distance/velocityd;
+			this->timed.push_back(total_time);
+		}
+	}
+
+	this->constructQp();
+	this->constructAb();
+	this->constructCd();
+
+}
+
+std::set<int> polyTraj::findCollisionSegment(const std::vector<int> &collision_idx, double delT){
+	// return start index of collision segment
+	std::set<int> collision_seg;
 	double collision_time;
 	for (int idx: collision_idx){
 		collision_time = delT * (double) idx;
+		for (int i=0; i<this->timed.size()-1; ++i){
+			double start_t = this->timed[i]; double end_t = this->timed[i+1];
+			if ((collision_time >= start_t) and (collision_time <= end_t)){
+				collision_seg.insert(i);
+			}
+		}
 	}
-}
-
-std::vector<int> polyTraj::findCollisionSegment(const std::vector<int> &collision_idx, double delT){
-	// TODO: return start index of collision segment
-	std::vector<int> collision_seg;
 	return collision_seg;
 }
 
 
-std::vector<pose> polyTraj::getAddPose(const std::vector<int>& collision_seg){
-	// TODO: add poses
-	std::vector<pose> addPose;
-	return addPose;
+std::vector<pose> polyTraj::getAddPath(const std::set<int>& collision_seg){
+	std::vector<pose> path_add = this->path;
+	int count = 0;
+	for (int i: collision_seg){
+		pose p1 = this->path[i];
+		pose p2 = this->path[i+1];
+		pose p3; p3.x = (p1.x + p2.x)/2; p3.y = (p1.y + p2.y)/2; p3.z = (p1.z + p2.z)/2;
+		path_add.insert(path_add.begin()+i+1+count, p3); // count to consider the adding effect of index (set is from smaller to larger value for int)
+		++count;
+	}
+	return path_add;
 }
 
 
@@ -129,7 +162,7 @@ void polyTraj::constructQp(){
 
 void polyTraj::constructAb(){
 	int num_waypoint = this->path.size();
-	int num_constraint = (2 + (num_waypoint-2)*2) * 3 + 2 * ((num_waypoint - 2) * 3) + (this->diff_degree - 2) * (num_waypoint - 2) * 3 + 2*4;
+	int num_constraint = (2 + (num_waypoint-2)*2) * 3 + 2 * ((num_waypoint - 2) * 3) + (this->diff_degree - 2) * (num_waypoint - 2) * 3 + 2*3;
 
 	int num_constraint_xyz = (2 + (num_waypoint-2)*2) + ((num_waypoint-2)) * this->diff_degree + 2; // zero velocity/acc end xyz
 
@@ -333,6 +366,10 @@ std::vector<pose> polyTraj::getTrajectory(double delT){
 		this->trajectory.push_back(p);
 	}
 	return this->trajectory;
+}
+
+std::vector<pose> polyTraj::getWaypointPath(){
+	return this->path;
 }
 
 void polyTraj::printWaypointPath(){
