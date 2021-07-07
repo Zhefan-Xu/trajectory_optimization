@@ -22,10 +22,10 @@ int main(int argc, char** argv){
 
 	std::string filename = "/home/zhefan/catkin_ws/src/trajectory_optimization/path/waypoint_maze_complete.txt";
 	std::vector<std::vector<pose>> paths = read_waypoint_file(filename);
-	std::vector<pose> path = paths[37];
+	std::vector<pose> path = paths[31];
 
 	std::vector<pose> path_sc = m.shortcutWaypointPath(path);
-	polyTraj polytraj_optimizer (6, 1, 4);
+	polyTraj polytraj_optimizer (7, 3, 3);
 	polytraj_optimizer.loadWaypointPath(path_sc);
 	polytraj_optimizer.printWaypointPath();
 	auto start_time1 = high_resolution_clock::now();
@@ -50,15 +50,15 @@ int main(int argc, char** argv){
 	valid = m.checkCollisionTrajectory(trajectory, collision_idx);
 	cout << "Trajectory is valid? " << valid << endl;
 
-	polytraj_optimizer.adjustWaypoint(collision_idx, 0.1);
-	auto start_time3 = high_resolution_clock::now();
-	polytraj_optimizer.optimize();
-	auto end_time3 = high_resolution_clock::now();
-	auto duration_total3 = duration_cast<microseconds>(end_time3 - start_time3);
-	cout << "Total Trajectory Opimtization: "<< duration_total3.count()/1e6 << " seconds. " << endl;
-	trajectory = polytraj_optimizer.getTrajectory(0.1);
-	valid = m.checkCollisionTrajectory(trajectory, collision_idx);
-	cout << "Trajectory is valid? " << valid << endl;
+	// polytraj_optimizer.adjustWaypoint(collision_idx, 0.1);
+	// auto start_time3 = high_resolution_clock::now();
+	// polytraj_optimizer.optimize();
+	// auto end_time3 = high_resolution_clock::now();
+	// auto duration_total3 = duration_cast<microseconds>(end_time3 - start_time3);
+	// cout << "Total Trajectory Opimtization: "<< duration_total3.count()/1e6 << " seconds. " << endl;
+	// trajectory = polytraj_optimizer.getTrajectory(0.1);
+	// valid = m.checkCollisionTrajectory(trajectory, collision_idx);
+	// cout << "Trajectory is valid? " << valid << endl;
 
 	// polytraj_optimizer.adjustWaypoint(collision_idx, 0.1);
 	// auto start_time4 = high_resolution_clock::now();
@@ -66,6 +66,16 @@ int main(int argc, char** argv){
 	// auto end_time4 = high_resolution_clock::now();
 	// auto duration_total4 = duration_cast<microseconds>(end_time4 - start_time4);
 	// cout << "Total Trajectory Opimtization: "<< duration_total4.count()/1e6 << " seconds. " << endl;
+	// trajectory = polytraj_optimizer.getTrajectory(0.1);
+	// valid = m.checkCollisionTrajectory(trajectory, collision_idx);
+	// cout << "Trajectory is valid? " << valid << endl;
+
+	// polytraj_optimizer.adjustWaypoint(collision_idx, 0.1);
+	// auto start_time5 = high_resolution_clock::now();
+	// polytraj_optimizer.optimize();
+	// auto end_time5 = high_resolution_clock::now();
+	// auto duration_total5 = duration_cast<microseconds>(end_time5 - start_time5);
+	// cout << "Total Trajectory Opimtization: "<< duration_total5.count()/1e6 << " seconds. " << endl;
 	// trajectory = polytraj_optimizer.getTrajectory(0.1);
 	// valid = m.checkCollisionTrajectory(trajectory, collision_idx);
 	// cout << "Trajectory is valid? " << valid << endl;

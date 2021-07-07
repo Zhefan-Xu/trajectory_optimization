@@ -150,7 +150,7 @@ void polyTraj::constructQp(){
 		}		
 	}
 
-	double perturb = 0.01; // to make them PSD -> PD
+	double perturb = 1; // to make them PSD -> PD
 	for (int i=0; i<dimension; ++i){
 		this->Qx[i][i] += perturb;
 		this->Qy[i][i] += perturb;
