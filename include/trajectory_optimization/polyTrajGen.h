@@ -16,7 +16,7 @@ private:
 
 	// the following attributes are based on Quadprog++
 	quadprogpp::Matrix<double> Qx, Qy, Qz; // Hessian
-	quadprogpp::Vector<double> px, py, pz; // linear term in objective function
+	quadprogpp::Vector<double> px, py, pz; // Linear term in objective function
 	quadprogpp::Matrix<double> Ax, Ay, Az; // Linear Equality Constraint Matrix
 	quadprogpp::Vector<double> bx, by, bz; // Linear Equality Constraint constant vector
 	quadprogpp::Matrix<double> Cx, Cy, Cz; // Linear Inequality Constraint Matrix
@@ -45,10 +45,7 @@ public:
 	std::vector<double> getTimed();
 	void printWaypointPath();
 	void printTrajectory();
-
-
 };
-
 
 
 #endif
