@@ -20,6 +20,33 @@ polyTraj::polyTraj(double _degree, double _velocityd, double _diff_degree){
 }
 
 
+void polyTraj::adjustTimed(const std::vector<double>& _timed){
+	if (_timed.size() != this->path.size()){
+		std::ostringstream msg;
+		msg << "Invalid size of time allocation array!";
+		throw std::logic_error(msg.str());
+	}
+	this->timed = _timed;
+	this->constructQp();
+	this->constructAb();
+	this->constructCd();
+}
+
+void polyTraj::adjustTimedSegment(const std::vector<double>& time_segment){ // this should include 0;
+	if (time_segment.size() != this->path.size()){
+		std::ostringstream msg;
+		msg << "Invalid size of time allocation array!";
+		throw std::logic_error(msg.str());
+	}
+
+	std::vector<double> _timed;
+	double t = 0;
+	for (double ti: time_segment){
+		_timed.push_back(t+ti);
+	}
+	this->adjustTimed(_timed);
+}
+
 void polyTraj::adjustWaypoint(const std::vector<int> &collision_idx, double delT){
 	std::set<int> collision_seg = this->findCollisionSegment(collision_idx, delT);
 	std::vector<pose> path_add = this->getAddPath(collision_seg);
@@ -370,6 +397,10 @@ std::vector<pose> polyTraj::getTrajectory(double delT){
 
 std::vector<pose> polyTraj::getWaypointPath(){
 	return this->path;
+}
+
+std::vector<double> polyTraj::getTimed(){
+	return this->timed;
 }
 
 void polyTraj::printWaypointPath(){
