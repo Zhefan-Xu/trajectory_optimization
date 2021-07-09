@@ -130,6 +130,7 @@ include_directories(
 # )
 add_library(polyTrajGen src/polyTrajGen.cpp)
 add_library(mapModuleOctomap src/mapModuleOctomap.cpp)
+add_library(timeOptimizer src/timeOptimizer.cpp)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -144,6 +145,7 @@ add_executable(waypoint_path_vis src/waypoint_path_vis.cpp)
 add_executable(test_generate_trajectory src/test/test_generate_trajectory.cpp)
 add_executable(test_quadprog src/test/test_quadprog.cpp)
 add_executable(test_mapModuleOctomap src/test/test_mapModuleOctomap.cpp)
+add_executable(test_timeOptimizer src/test/test_timeOptimizer.cpp)
 # add_executable(test_eigen src/test_eigen.cpp)
 
 ## Rename C++ executable without prefix
@@ -163,10 +165,13 @@ add_executable(test_mapModuleOctomap src/test/test_mapModuleOctomap.cpp)
 # )
 target_link_libraries(waypoint_path_vis ${catkin_LIBRARIES})
 target_link_libraries(polyTrajGen "/usr/local/lib/libquadprog.a")
+target_link_libraries(timeOptimizer "/usr/local/lib/libquadprog.a")
 target_link_libraries(test_generate_trajectory ${catkin_LIBRARIES} polyTrajGen)
 target_link_libraries(test_quadprog ${catkin_LIBRARIES} "/usr/local/lib/libquadprog.a")
 target_link_libraries(mapModuleOctomap ${catkin_LIBRARIES})
 target_link_libraries(test_mapModuleOctomap ${catkin_LIBRARIES} mapModuleOctomap polyTrajGen)
+target_link_libraries(test_timeOptimizer ${catkin_LIBRARIES} mapModuleOctomap polyTrajGen timeOptimizer)
+
 # target_link_libraries(test_eigen ${catkin_LIBRARIES})
 
 #############

@@ -4,19 +4,22 @@ polyTraj::polyTraj(){
 	this->degree = 6;
 	this->velocityd = 1;
 	this->diff_degree = 3;
+	this->perturb = 1;
 }
 
-polyTraj::polyTraj(double _degree){
+polyTraj::polyTraj(int _degree){
 	this->degree = _degree;
 	this->velocityd = 1;
 	this->diff_degree = 3;
+	this->perturb = 1;
 
 }
 
-polyTraj::polyTraj(double _degree, double _velocityd, double _diff_degree){
+polyTraj::polyTraj(int _degree, double _velocityd, int _diff_degree){
 	this->degree = _degree;
 	this->velocityd = _velocityd;
 	this->diff_degree = _diff_degree;
+	this->perturb = 1;
 }
 
 
@@ -177,11 +180,11 @@ void polyTraj::constructQp(){
 		}		
 	}
 
-	double perturb = 1; // to make them PSD -> PD
+	// purturb to make them PSD -> PD
 	for (int i=0; i<dimension; ++i){
-		this->Qx[i][i] += perturb;
-		this->Qy[i][i] += perturb;
-		this->Qz[i][i] += perturb;
+		this->Qx[i][i] += this->perturb;
+		this->Qy[i][i] += this->perturb;
+		this->Qz[i][i] += this->perturb;
 	}
 	// cout << this->Qx << endl;
 	// cout << this->Qyaw << endl;

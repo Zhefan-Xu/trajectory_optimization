@@ -6,12 +6,13 @@
 
 class polyTraj{
 private:
-	double degree;
-	double diff_degree;
+	int degree;
+	int diff_degree;
 	double velocityd;
 	std::vector<pose> path;
 	std::vector<pose> trajectory;
 	std::vector<double> timed; // desired time for path
+	double perturb; // convert PSD -> PD
 
 
 	// the following attributes are based on Quadprog++
@@ -27,8 +28,8 @@ private:
 
 public:
 	polyTraj();
-	polyTraj(double _degree);
-	polyTraj(double _degree, double _velocityd, double _diff_degree);
+	polyTraj(int _degree);
+	polyTraj(int _degree, double _velocityd, int _diff_degree);
 	void adjustTimed(const std::vector<double>& _timed); // same format as timed
 	void adjustTimedSegment(const std::vector<double>& time_segment); // time for each segment
 	void adjustWaypoint(const std::vector<int> &collision_idx, double delT);
