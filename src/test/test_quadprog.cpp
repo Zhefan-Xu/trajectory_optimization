@@ -174,4 +174,12 @@ int main(int argc, char **argv){
 
 	M8 = 0;
 	std::cout << M8 << std::endl;
+
+	quadprogpp::Vector<double> v3;
+	quadprogpp::Matrix<double> M9;
+	v3.resize(2); v3[0] = 1; v3[1] = 2;
+	M9.resize(1, 2); M9.setRow(0, v3);
+	std::cout << M9 << std::endl;
+
+
 }

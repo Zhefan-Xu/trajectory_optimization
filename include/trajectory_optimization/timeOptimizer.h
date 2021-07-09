@@ -54,6 +54,7 @@ public:
 	void duration2Timed(const quadprogpp::Vector<double>& t, std::vector<double>& timed);
 	void computeGradient(const quadprogpp::Vector<double>& t, const objectiveFunc_data& data, quadprogpp::Vector<double>& grad);
 	double objectiveFunc(const quadprogpp::Vector<double>& t, const objectiveFunc_data& data);
+	std::vector<double> optimize(int iteration);
 
 };
 
