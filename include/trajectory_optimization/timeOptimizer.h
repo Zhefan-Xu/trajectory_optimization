@@ -36,7 +36,7 @@ public:
 			      const quadprogpp::Vector<double>& _y_param_sol,
 			      const quadprogpp::Vector<double>& _z_param_sol,
 			      double _dt);
-	
+
 	timeOptimizer(const std::vector<double>& timed, 
 				  const quadprogpp::Vector<double>& _x_param_sol, 
 				  const quadprogpp::Vector<double>& _y_param_sol,
@@ -50,7 +50,8 @@ public:
 
 
 
-	void convertTimed(const std::vector<double> timed, quadprogpp::Vector<double> _t0);
+	void timed2Duration(const std::vector<double> timed, quadprogpp::Vector<double>& t);
+	void duration2Timed(const quadprogpp::Vector<double>& t, std::vector<double>& timed);
 	void computeGradient(const quadprogpp::Vector<double>& t, const objectiveFunc_data& data, quadprogpp::Vector<double>& grad);
 	double objectiveFunc(const quadprogpp::Vector<double>& t, const objectiveFunc_data& data);
 
