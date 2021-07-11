@@ -95,6 +95,7 @@ void timeOptimizer::computeGradient(const quadprogpp::Vector<double>& t, quadpro
 		quadprogpp::Vector<double> t_plus = t; t_plus[i] += this->dh;
 		double f_plus = this->objectiveFunc(t_plus);
 		grad[i] = (f_plus - f0)/this->dh;
+		cout << "i: " << i << ", f0: " << f0 << ", fplus: " << f_plus << endl;
 	}
 
 }
@@ -201,7 +202,14 @@ std::vector<double> timeOptimizer::optimize(double lr=0.01, int max_iteration=10
 		delta = sqrt(dot_prod(diff, diff));
 
 		++count_iter;
+		// cout << grad << endl;
+		cout << "current: " << current_t << endl;
+		cout << "prev: " << prev_t << endl;
+		cout << "grad: " << grad << endl;
+		cout << "delta: " << delta << ", at: " << count_iter << endl;
 	}
+
+	cout << "delta: " << delta << ", at " << count_iter << " iterations." << endl;
 
 	// Extract data from result
 	for (int i=0; i<current_t.size(); ++i){

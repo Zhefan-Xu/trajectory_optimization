@@ -17,7 +17,7 @@ int main(int argc, char **argv){
 	std::vector<pose> path = paths[test_path_index];
 
 	// Conduct optimization
-	polyTraj polytraj_optimizer (6, 1, 4);
+	polyTraj polytraj_optimizer (6, 1, 3);
 	polytraj_optimizer.loadWaypointPath(path);
 	polytraj_optimizer.printWaypointPath();
 	auto start_time = high_resolution_clock::now();

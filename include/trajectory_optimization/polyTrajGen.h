@@ -30,6 +30,7 @@ public:
 	polyTraj();
 	polyTraj(int _degree);
 	polyTraj(int _degree, double _velocityd, int _diff_degree);
+	polyTraj(int _degree, double _velocityd, int _diff_degree, double _perturb);
 	void adjustTimed(const std::vector<double>& _timed); // same format as timed
 	void adjustTimedSegment(const std::vector<double>& time_segment); // time for each segment
 	void adjustWaypoint(const std::vector<int> &collision_idx, double delT);
@@ -44,6 +45,7 @@ public:
 	std::vector<pose> getTrajectory(double delT);
 	std::vector<pose> getWaypointPath();
 	std::vector<double> getTimed();
+	void getSol(quadprogpp::Vector<double>& _x_param_sol, quadprogpp::Vector<double>& _y_param_sol,quadprogpp::Vector<double>& _z_param_sol);
 	void printWaypointPath();
 	void printTrajectory();
 };

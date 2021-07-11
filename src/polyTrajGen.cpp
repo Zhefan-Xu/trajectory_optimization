@@ -22,6 +22,13 @@ polyTraj::polyTraj(int _degree, double _velocityd, int _diff_degree){
 	this->perturb = 1;
 }
 
+polyTraj::polyTraj(int _degree, double _velocityd, int _diff_degree, double _perturb){
+	this->degree = _degree;
+	this->velocityd = _velocityd;
+	this->diff_degree = _diff_degree;
+	this->perturb = _perturb;
+}
+
 
 void polyTraj::adjustTimed(const std::vector<double>& _timed){
 	if (_timed.size() != this->path.size()){
@@ -36,7 +43,7 @@ void polyTraj::adjustTimed(const std::vector<double>& _timed){
 }
 
 void polyTraj::adjustTimedSegment(const std::vector<double>& time_segment){ // this should include 0;
-	if (time_segment.size() != this->path.size()){
+	if (time_segment.size() != this->path.size()-1){
 		std::ostringstream msg;
 		msg << "Invalid size of time allocation array!";
 		throw std::logic_error(msg.str());
@@ -44,6 +51,7 @@ void polyTraj::adjustTimedSegment(const std::vector<double>& time_segment){ // t
 
 	std::vector<double> _timed;
 	double t = 0;
+	_timed.push_back(t);
 	for (double ti: time_segment){
 		_timed.push_back(t+ti);
 	}
@@ -354,6 +362,8 @@ void polyTraj::optimize(){
 	this->x_param_sol = x_param;
 	this->y_param_sol = y_param;
 	this->z_param_sol = z_param;
+
+	cout << "f0: " << 2 * (min_result_x + min_result_y + min_result_z) << endl;
 }
 
 pose polyTraj::getPose(double t){
@@ -405,6 +415,13 @@ std::vector<pose> polyTraj::getWaypointPath(){
 std::vector<double> polyTraj::getTimed(){
 	return this->timed;
 }
+
+void polyTraj::getSol(quadprogpp::Vector<double>& _x_param_sol, quadprogpp::Vector<double>& _y_param_sol,quadprogpp::Vector<double>& _z_param_sol){
+	_x_param_sol = this->x_param_sol;
+	_y_param_sol = this->y_param_sol;
+	_z_param_sol = this->z_param_sol;
+}
+
 
 void polyTraj::printWaypointPath(){
 	cout << fixed << setprecision(2); 
