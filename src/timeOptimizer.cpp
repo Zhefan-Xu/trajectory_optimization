@@ -3,51 +3,69 @@
 timeOptimizer::timeOptimizer(const quadprogpp::Vector<double>& _t0, 
 							 const quadprogpp::Vector<double>& _x_param_sol, 
 				  			 const quadprogpp::Vector<double>& _y_param_sol,
-				  			 const quadprogpp::Vector<double>& _z_param_sol){
+				  			 const quadprogpp::Vector<double>& _z_param_sol,
+				  			 double _degree, double _diff_degree, double _perturb){
 	this->t0 = _t0;
 	this->x_param_sol = _x_param_sol;
 	this->y_param_sol = _y_param_sol;
 	this->z_param_sol = _z_param_sol;
-	this->dt = 0.1;
+	this->dh = 0.1;
+
+	this->degree = _degree;
+	this->diff_degree = _diff_degree;
+	this->perturb = _perturb;
 }
 
 timeOptimizer::timeOptimizer(const quadprogpp::Vector<double>& _t0, 
 							 const quadprogpp::Vector<double>& _x_param_sol, 
 				  			 const quadprogpp::Vector<double>& _y_param_sol,
 				  			 const quadprogpp::Vector<double>& _z_param_sol,
-				  			 double _dt){
+				  			 double _dh, double _degree, double _diff_degree, double _perturb){
 	this->t0 = _t0;
 	this->x_param_sol = _x_param_sol;
 	this->y_param_sol = _y_param_sol;
 	this->z_param_sol = _z_param_sol;
-	this->dt = _dt;
-}
+	this->dh = _dh;
 
-timeOptimizer::timeOptimizer(const std::vector<double>& timed, 
-				             const quadprogpp::Vector<double>& _x_param_sol, 
-				             const quadprogpp::Vector<double>& _y_param_sol,
-				             const quadprogpp::Vector<double>& _z_param_sol){
-	quadprogpp::Vector<double> _t0;
-	this->timed2Duration(timed, _t0);
-	this->t0 = _t0;
-	this->x_param_sol = _x_param_sol;
-	this->y_param_sol = _y_param_sol;
-	this->z_param_sol = _z_param_sol;
-	this->dt = 0.1;
+	this->degree = _degree;
+	this->diff_degree = _diff_degree;
+	this->perturb = _perturb;
 }
 
 timeOptimizer::timeOptimizer(const std::vector<double>& timed, 
 				             const quadprogpp::Vector<double>& _x_param_sol, 
 				             const quadprogpp::Vector<double>& _y_param_sol,
 				             const quadprogpp::Vector<double>& _z_param_sol,
-				             double _dt){
+				             double _degree, double _diff_degree, double _perturb){
 	quadprogpp::Vector<double> _t0;
 	this->timed2Duration(timed, _t0);
 	this->t0 = _t0;
 	this->x_param_sol = _x_param_sol;
 	this->y_param_sol = _y_param_sol;
 	this->z_param_sol = _z_param_sol;
-	this->dt = _dt;
+	this->dh = 0.1;
+
+	this->degree = _degree;
+	this->diff_degree = _diff_degree;
+	this->perturb = _perturb;
+}
+
+timeOptimizer::timeOptimizer(const std::vector<double>& timed, 
+				             const quadprogpp::Vector<double>& _x_param_sol, 
+				             const quadprogpp::Vector<double>& _y_param_sol,
+				             const quadprogpp::Vector<double>& _z_param_sol,
+				             double _dh, double _degree, double _diff_degree, double _perturb){
+	quadprogpp::Vector<double> _t0;
+	this->timed2Duration(timed, _t0);
+	this->t0 = _t0;
+	this->x_param_sol = _x_param_sol;
+	this->y_param_sol = _y_param_sol;
+	this->z_param_sol = _z_param_sol;
+	this->dh = _dh;
+
+	this->degree = _degree;
+	this->diff_degree = _diff_degree;
+	this->perturb = _perturb;
 }
 
 void timeOptimizer::timed2Duration(const std::vector<double> timed, quadprogpp::Vector<double>& t){
@@ -69,22 +87,22 @@ void timeOptimizer::duration2Timed(const quadprogpp::Vector<double>& t, std::vec
 }
 
 
-void timeOptimizer::computeGradient(const quadprogpp::Vector<double>& t, const objectiveFunc_data& data, quadprogpp::Vector<double>& grad){
+void timeOptimizer::computeGradient(const quadprogpp::Vector<double>& t, quadprogpp::Vector<double>& grad){
 	int num_variable = t.size();
 	grad.resize(num_variable);
-	double f0 = this->objectiveFunc(t, data);
+	double f0 = this->objectiveFunc(t);
 	for (int i=0; i<num_variable; ++i){ // each direction of gradient
-		quadprogpp::Vector<double> t_plus = t; t_plus[i] += this->dt;
-		double f_plus = this->objectiveFunc(t_plus, data);
-		grad[i] = (f_plus - f0)/this->dt;
+		quadprogpp::Vector<double> t_plus = t; t_plus[i] += this->dh;
+		double f_plus = this->objectiveFunc(t_plus);
+		grad[i] = (f_plus - f0)/this->dh;
 	}
 
 }
 
-double timeOptimizer::objectiveFunc(const quadprogpp::Vector<double>& t, const objectiveFunc_data& data){
+double timeOptimizer::objectiveFunc(const quadprogpp::Vector<double>& t){
 	// TODO: evaluate each t
 	int num_path_segment = t.size();
-	int degree = data.degree; int diff_degree = data.diff_degree; double perturb = data.perturb;
+	int degree = this->degree; int diff_degree = this->diff_degree; double perturb = this->perturb;
 	int num_each_coeff = degree + 1; 
 	int dimension = num_each_coeff * num_path_segment;
 
@@ -145,10 +163,51 @@ double timeOptimizer::objectiveFunc(const quadprogpp::Vector<double>& t, const o
 	return result;
 }
 
+void timeOptimizer::projection(quadprogpp::Vector<double>& t){
+	for (int i=0; i<t.size(); ++i){
+		if (t[i] < 0){
+			t[i] = 0;
+		}
+	}
+}
 
-std::vector<double> timeOptimizer::optimize(int iteration=100){
+
+std::vector<double> timeOptimizer::optimize(double lr=0.01, int max_iteration=100){
 	// TODO: implement gradient descent optimization
 	std::vector<double> optimized_t;
+	quadprogpp::Vector<double> current_t, prev_t;
+	current_t = this->t0;
+
+	int count_iter = 0;
+	double delta = 10000; double tol = 1e-2;
+	while (delta > tol){ // stop criteria
+		if (count_iter > max_iteration){ // maximum iteration
+			break;
+		}
+
+		// 1. Compute Gradient
+		quadprogpp::Vector<double> grad;
+		this->computeGradient(current_t, grad);
+
+		// 2. Gradient Descent
+		prev_t = current_t; // record previous value
+		current_t = current_t - lr * grad;
+
+		// 3. Projection
+		this->projection(current_t);
+
+		// 4. Evaluate delta 
+		quadprogpp::Vector<double> diff = current_t - prev_t;
+		delta = sqrt(dot_prod(diff, diff));
+
+		++count_iter;
+	}
+
+	// Extract data from result
+	for (int i=0; i<current_t.size(); ++i){
+		optimized_t.push_back(current_t[i]);
+	}
+
 	return optimized_t;
 }
 
