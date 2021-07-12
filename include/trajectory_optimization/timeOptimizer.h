@@ -46,8 +46,8 @@ public:
 
 
 
-	void timed2Duration(const std::vector<double> timed, quadprogpp::Vector<double>& t);
-	void duration2Timed(const quadprogpp::Vector<double>& t, std::vector<double>& timed);
+	static void timed2Duration(const std::vector<double> timed, quadprogpp::Vector<double>& t);
+	static void duration2Timed(const quadprogpp::Vector<double>& t, std::vector<double>& timed);
 	void computeGradient(const quadprogpp::Vector<double>& t, quadprogpp::Vector<double>& grad);
 	double objectiveFunc(const quadprogpp::Vector<double>& t);
 	void projection(quadprogpp::Vector<double>& t);

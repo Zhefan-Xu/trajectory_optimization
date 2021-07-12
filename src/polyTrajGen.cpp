@@ -53,7 +53,8 @@ void polyTraj::adjustTimedSegment(const std::vector<double>& time_segment){ // t
 	double t = 0;
 	_timed.push_back(t);
 	for (double ti: time_segment){
-		_timed.push_back(t+ti);
+		t = t+ti;
+		_timed.push_back(t);
 	}
 	this->adjustTimed(_timed);
 }
