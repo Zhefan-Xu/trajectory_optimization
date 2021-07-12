@@ -139,6 +139,8 @@ void polyTraj::constructQp(){
 	int num_path_segment = this->path.size() - 1;
 	int num_each_coeff = this->degree + 1;
 	int dimension = (this->degree+1) * num_path_segment;
+	int objective_degree = this->degree;
+	// int objective_degree = 1;
 
 	// Construct Q Matrix
 	this->Qx.resize(dimension, dimension); this->Qx = 0;
@@ -161,15 +163,15 @@ void polyTraj::constructQp(){
 		quadprogpp::Matrix<double> f; // create factor matrix for x, y and z seperately
 		f.resize(num_each_coeff, 1);
 		for (int i=0; i<num_each_coeff; ++i){
-			if (i < this->diff_degree){
+			if (i < objective_degree){
 				f[i][0] = 0;
 			}
 			else{
 				double factor = 1.0;
-				for (int j=0; j<this->diff_degree; ++j){
+				for (int j=0; j<objective_degree; ++j){
 					factor *= (double) (i-j);
 				}
-				factor *= (double) (1/(i-this->diff_degree+1.0)) * (pow(end_t, i-this->diff_degree+1.0) - pow(start_t, i-this->diff_degree+1.0));
+				factor *= (double) (1/(i-objective_degree+1.0)) * (pow(end_t, i-objective_degree+1.0) - pow(start_t, i-objective_degree+1.0));
 				f[i][0] = factor;
 			}
 		}

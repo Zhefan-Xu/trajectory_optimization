@@ -25,8 +25,21 @@ int main(int argc, char** argv){
 	std::vector<pose> path = paths[37];
 
 	std::vector<pose> path_sc = m.shortcutWaypointPath(path);
+
+	int max_waypoint = 5;
+	std::vector<pose> path_new;
+	if (path_sc.size() > max_waypoint){
+		for (int i=0; i<max_waypoint; ++i){
+			path_new.push_back(path_sc[i]);
+		}
+	}
+	else{
+		path_new = path_sc;		
+	}
+
+
 	polyTraj polytraj_optimizer (7, 2, 4);
-	polytraj_optimizer.loadWaypointPath(path_sc);
+	polytraj_optimizer.loadWaypointPath(path_new);
 	polytraj_optimizer.printWaypointPath();
 	auto start_time1 = high_resolution_clock::now();
 	polytraj_optimizer.optimize();

@@ -25,16 +25,27 @@ int main(int argc, char** argv){
 	std::string filename = "/home/zhefan/catkin_ws/src/trajectory_optimization/path/waypoint_maze_complete.txt";
 	std::vector<std::vector<pose>> paths = read_waypoint_file(filename);
 
-	int test_path_index = 23;	// use index 30 for test
+	int test_path_index = 37;	// use index 30 for test
 	std::vector<pose> path = paths[test_path_index];
 
 	std::vector<pose> path_sc = m.shortcutWaypointPath(path);
+
+	int max_waypoint = 5;
+	std::vector<pose> path_new;
+	if (path_sc.size() > max_waypoint){
+		for (int i=0; i<max_waypoint; ++i){
+			path_new.push_back(path_sc[i]);
+		}
+	}
+	else{
+		path_new = path_sc;		
+	}
 
 
 	// Conduct optimization
 	int degree = 7; double velocityd = 1.5; int diff_degree = 4; double perturb = 1;
 	polyTraj polytraj_optimizer (degree, velocityd, diff_degree, perturb);
-	polytraj_optimizer.loadWaypointPath(path);
+	polytraj_optimizer.loadWaypointPath(path_new);
 	polytraj_optimizer.printWaypointPath();
 	auto start_time = high_resolution_clock::now();
 	polytraj_optimizer.optimize();
@@ -78,7 +89,7 @@ int main(int argc, char** argv){
 
 	std::vector<pose> trajectory = polytraj_optimizer.getTrajectory(0.05);
 	// polytraj_optimizer.printTrajectory();
-	visualization_msgs::MarkerArray path_msg = wrapVisMsg(path_sc);
+	visualization_msgs::MarkerArray path_msg = wrapVisMsg(path_new);
 	visualization_msgs::MarkerArray trajectory_msg = wrapVisMsg(trajectory);
 
 
