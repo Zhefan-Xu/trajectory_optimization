@@ -146,6 +146,7 @@ add_executable(test_generate_trajectory src/test/test_generate_trajectory.cpp)
 add_executable(test_quadprog src/test/test_quadprog.cpp)
 add_executable(test_mapModuleOctomap src/test/test_mapModuleOctomap.cpp)
 add_executable(test_timeOptimizer src/test/test_timeOptimizer.cpp)
+add_executable(test_staticPlanner src/test/test_staticPlanner.cpp)
 # add_executable(test_eigen src/test_eigen.cpp)
 
 ## Rename C++ executable without prefix
@@ -171,6 +172,7 @@ target_link_libraries(test_quadprog ${catkin_LIBRARIES} "/usr/local/lib/libquadp
 target_link_libraries(mapModuleOctomap ${catkin_LIBRARIES})
 target_link_libraries(test_mapModuleOctomap ${catkin_LIBRARIES} mapModuleOctomap polyTrajGen)
 target_link_libraries(test_timeOptimizer ${catkin_LIBRARIES} mapModuleOctomap polyTrajGen timeOptimizer)
+target_link_libraries(test_staticPlanner ${catkin_LIBRARIES} mapModuleOctomap polyTrajGen)
 
 # target_link_libraries(test_eigen ${catkin_LIBRARIES})
 

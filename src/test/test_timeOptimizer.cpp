@@ -57,36 +57,6 @@ int main(int argc, char** argv){
 	std::vector<double> timed = polytraj_optimizer.getTimed();
 
 
-
-
-
-	/*
-	quadprogpp::Vector<double> td;
-	timeOptimizer::timed2Duration(timed, td);
-	int count = 0;
-	std::vector<double> td_vec;
-	while (count < td.size()){
-		cout << td[count] << endl;
-		td_vec.push_back(td[count]);
-		++count;
-	}
-
-	td_vec[0] /= 2; td_vec[1] /= 2; td_vec[2] /= 1; td_vec[3] /= 2; td_vec[4] /= 2; td_vec[5] /= 2; 
-	td_vec[6] /= 2; td_vec[7] /= 1;
-	cout << "size: " << td_vec.size() << endl;
-
-
-	polytraj_optimizer.adjustTimedSegment(td_vec);
-	auto start_time1 = high_resolution_clock::now();
-	polytraj_optimizer.optimize();
-	auto end_time1 = high_resolution_clock::now();
-	auto duration_total1 = duration_cast<microseconds>(end_time1 - start_time1);
-	cout << "Total: "<< duration_total1.count()/1e6 << " seconds. " << endl;
-	*/
-
-
-
-
 	std::vector<pose> trajectory = polytraj_optimizer.getTrajectory(0.05);
 	// polytraj_optimizer.printTrajectory();
 	visualization_msgs::MarkerArray path_msg = wrapVisMsg(path_new);
