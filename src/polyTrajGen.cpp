@@ -82,8 +82,10 @@ void polyTraj::adjustWaypoint(const std::vector<int> &collision_idx, double delT
 
 }
 
-void polyTraj::adjustCorridorConstraint(const std::vector<int> &collision_idx, double radius){
+void polyTraj::adjustCorridorConstraint(const std::vector<int> &collision_idx, double radius, double delT){
 	// TODO: implement adding corridor constraint (inequality)
+	// Use bounding box instead of distance to path to save computation
+	this->constructCd(collision_idx, radius, delT);
 }
 
 
@@ -103,6 +105,10 @@ std::set<int> polyTraj::findCollisionSegment(const std::vector<int> &collision_i
 	return collision_seg;
 }
 
+std::map<int, std::vector<double>> polyTraj::findCorridorConstraintTime(const std::set<int> &collision_seg){
+	// TODO: Implement this find corresponding time
+
+}
 
 std::vector<pose> polyTraj::getAddPath(const std::set<int>& collision_seg){
 	std::vector<pose> path_add = this->path;
@@ -356,6 +362,33 @@ void polyTraj::constructCd(){
 	this->dy.resize(1);this->dy = 0;
 	this->dz.resize(1);this->dz = 0;
 	
+}
+
+void polyTraj::constructCd(const std::vector<int> &collision_idx, double radius, double delT){
+	int num_path_segment = this->path.size() - 1;
+	int dimension = (this->degree+1) * num_path_segment;
+
+
+	// determine the number of constraint points:
+	std::set<int> collision_seg = this->findCollisionSegment(collision_idx, delT);
+	double f_delT = 2.0;
+
+	// determine time to add constraints for each segment and store it into a std map
+	std::map<int, std::vector<double>> segTimeMap = this->findCorridorConstraintTime(collision_seg);
+	int num_constraint = segTimeMap.size();
+	cout << "[PolyTraj INFO]: " <<"expected inequality constriants: " << num_constraint << endl;
+
+	this->Cx.resize(num_constraint, dimension); this->Cx = 0;
+	this->Cy.resize(num_constraint, dimension); this->Cy = 0;
+	this->Cz.resize(num_constraint, dimension); this->Cz = 0;
+
+	this->dx.resize(num_constraint);this->dx = 0;
+	this->dy.resize(num_constraint);this->dy = 0;
+	this->dz.resize(num_constraint);this->dz = 0;
+
+	// add inequality constraints:
+	
+
 }
 
 void polyTraj::optimize(){

@@ -36,13 +36,15 @@ public:
 	void adjustTimed(const std::vector<double>& _timed); // same format as timed
 	void adjustTimedSegment(const std::vector<double>& time_segment); // time for each segment
 	void adjustWaypoint(const std::vector<int> &collision_idx, double delT);
-	void adjustCorridorConstraint(const std::vector<int> &collision_idx, double radius);
+	void adjustCorridorConstraint(const std::vector<int> &collision_idx, double radius, double delT);
 	std::set<int> findCollisionSegment(const std::vector<int> &collision_idx, double delT);
+	std::map<int, std::vector<double>> findCorridorConstraintTime(const std::set<int> &collision_seg);
 	std::vector<pose> getAddPath(const std::set<int>& collision_seg);
 	void loadWaypointPath(const std::vector<pose> &_path);
 	void constructQp(); // Hessian Matrix and linear vector
 	void constructAb(); // Equality constraint
 	void constructCd(); // Inequality constraint
+	void constructCd(const std::vector<int> &collision_idx, double radius, double delT);
 	void optimize();
 	pose getPose(double t);
 	std::vector<pose> getTrajectory(double delT);

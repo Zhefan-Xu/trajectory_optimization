@@ -181,5 +181,10 @@ int main(int argc, char **argv){
 	M9.resize(1, 2); M9.setRow(0, v3);
 	std::cout << M9 << std::endl;
 
-
+	quadprogpp::Matrix<double> M10;
+	M10.resize(2, 2);
+	M10[0][0] = 1; M10[0][1] = 2; M10[1][0] = 3; M10[1][1] = 4;
+	std::cout << M10 << std::endl;
+	M10.resize(4, 2);
+	std::cout << M10 << std::endl;
 }
