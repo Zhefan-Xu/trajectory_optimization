@@ -82,6 +82,11 @@ void polyTraj::adjustWaypoint(const std::vector<int> &collision_idx, double delT
 
 }
 
+void polyTraj::adjustCorridorConstraint(const std::vector<int> &collision_idx, double radius){
+	// TODO: implement adding corridor constraint (inequality)
+}
+
+
 std::set<int> polyTraj::findCollisionSegment(const std::vector<int> &collision_idx, double delT){
 	// return start index of collision segment
 	std::set<int> collision_seg;
@@ -219,7 +224,7 @@ void polyTraj::constructAb(){
 	this->by.resize(num_constraint_xyz); this->by = 0;
 	this->bz.resize(num_constraint_xyz); this->bz = 0;
 
-	cout << "expected equality constriants: " << num_constraint << endl;
+	cout << "[PolyTraj INFO]: " <<"expected equality constriants: " << num_constraint << endl;
 
 	int count_constraints = 0; // Total number of constraints
 	int count_constraints_xyz = 0;
@@ -336,7 +341,7 @@ void polyTraj::constructAb(){
 		count_constraints += 3;
 	}	
 
-	cout << "number of equality constraints: " << count_constraints << endl;
+	cout << "[PolyTraj INFO]: " << "number of equality constraints: " << count_constraints << endl;
 }
 
 void polyTraj::constructCd(){
@@ -354,6 +359,9 @@ void polyTraj::constructCd(){
 }
 
 void polyTraj::optimize(){
+	auto start_time = high_resolution_clock::now(); // Timing
+	
+
 	int num_path_segment = this->path.size() - 1;
 	int dimension = ((this->degree+1) * 4) * num_path_segment;
 
@@ -366,7 +374,10 @@ void polyTraj::optimize(){
 	this->y_param_sol = y_param;
 	this->z_param_sol = z_param;
 
-	cout << "f0: " << 2 * (min_result_x + min_result_y + min_result_z) << endl;
+	auto end_time = high_resolution_clock::now();
+	auto duration_total = duration_cast<microseconds>(end_time - start_time);
+	cout << "[PolyTraj INFO]: " <<   "solve time: "<< duration_total.count()/1e6 << " seconds. " << endl;
+	cout << "[PolyTraj INFO]: " << "f0: " << 2 * (min_result_x + min_result_y + min_result_z) << endl;
 }
 
 pose polyTraj::getPose(double t){

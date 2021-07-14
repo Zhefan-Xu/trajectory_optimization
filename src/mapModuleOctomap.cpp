@@ -82,6 +82,7 @@ bool mapModule::checkCollisionTrajectory(std::vector<pose> trajectory, std::vect
 		}
 		++count;
 	}
+	cout << "[MapModule INFO]: " << "Trajectory is valid? " << valid << endl;
 	return valid;
 }
 

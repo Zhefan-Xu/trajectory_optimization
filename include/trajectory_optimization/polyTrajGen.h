@@ -2,6 +2,8 @@
 #define POLYTRAJGEN_H
 #include <trajectory_optimization/utils.h>
 #include <QuadProg++.hh>
+#include <chrono> 
+using namespace std::chrono;
 
 
 class polyTraj{
@@ -34,6 +36,7 @@ public:
 	void adjustTimed(const std::vector<double>& _timed); // same format as timed
 	void adjustTimedSegment(const std::vector<double>& time_segment); // time for each segment
 	void adjustWaypoint(const std::vector<int> &collision_idx, double delT);
+	void adjustCorridorConstraint(const std::vector<int> &collision_idx, double radius);
 	std::set<int> findCollisionSegment(const std::vector<int> &collision_idx, double delT);
 	std::vector<pose> getAddPath(const std::set<int>& collision_seg);
 	void loadWaypointPath(const std::vector<pose> &_path);
