@@ -38,7 +38,8 @@ public:
 	void adjustWaypoint(const std::vector<int> &collision_idx, double delT);
 	void adjustCorridorConstraint(const std::vector<int> &collision_idx, double radius, double delT);
 	std::set<int> findCollisionSegment(const std::vector<int> &collision_idx, double delT);
-	std::map<int, std::vector<double>> findCorridorConstraintTime(const std::set<int> &collision_seg);
+	pose getPoseLineInterpolate(double seg_idx, double t);
+	std::map<int, std::vector<double>> findCorridorConstraintTime(const std::set<int> &collision_seg, double delT); // find time to add corridor constraints
 	std::vector<pose> getAddPath(const std::set<int>& collision_seg);
 	void loadWaypointPath(const std::vector<pose> &_path);
 	void constructQp(); // Hessian Matrix and linear vector

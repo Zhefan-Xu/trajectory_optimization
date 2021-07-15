@@ -105,9 +105,28 @@ std::set<int> polyTraj::findCollisionSegment(const std::vector<int> &collision_i
 	return collision_seg;
 }
 
-std::map<int, std::vector<double>> polyTraj::findCorridorConstraintTime(const std::set<int> &collision_seg){
-	// TODO: Implement this find corresponding time
+std::map<int, std::vector<double>> polyTraj::findCorridorConstraintTime(const std::set<int> &collision_seg, double delT){
+	std::map<int, std::vector<double>> segTimeMap;
+	for (int seg_idx: collision_seg){
+		double start_t = this->timed[seg_idx]; double end_t = this->timed[seg_idx+1];
+		double t = start_t; std::vector<double> t_arr;
+		while (t < end_t){
+			t += delT;
+			t_arr.push_back(t);
+		}
+		segTimeMap[seg_idx] = t_arr;
+	}
+	return segTimeMap;
+}
 
+pose polyTraj::getPoseLineInterpolate(double seg_idx, double t){ // iterpolate using t
+	double start_t = this->timed[seg_idx]; double end_t = this->timed[seg_idx+1];
+	double duration = end_t - start_t; 
+	double ratio = (t - start_t)/duration;
+	pose p;
+	pose p0 = this->path[seg_idx]; pose p1 = this->path[seg_idx+1];
+	p.x = p0.x + ratio * (p1.x - p0.x); p.y = p0.y + ratio * (p1.y - p0.y); p.z = p0.z + ratio * (p1.z - p0.z);
+	return p;
 }
 
 std::vector<pose> polyTraj::getAddPath(const std::set<int>& collision_seg){
@@ -364,18 +383,18 @@ void polyTraj::constructCd(){
 	
 }
 
-void polyTraj::constructCd(const std::vector<int> &collision_idx, double radius, double delT){
+void polyTraj::constructCd(const std::vector<int> &collision_idx, double radius, double delT){ // collision index should be culmulated
 	int num_path_segment = this->path.size() - 1;
 	int dimension = (this->degree+1) * num_path_segment;
-
+	int num_each_coeff = this->degree + 1;
 
 	// determine the number of constraint points:
 	std::set<int> collision_seg = this->findCollisionSegment(collision_idx, delT);
-	double f_delT = 2.0;
+	double f_delT = 2.0; delT *= f_delT;
 
 	// determine time to add constraints for each segment and store it into a std map
-	std::map<int, std::vector<double>> segTimeMap = this->findCorridorConstraintTime(collision_seg);
-	int num_constraint = segTimeMap.size();
+	std::map<int, std::vector<double>> segTimeMap = this->findCorridorConstraintTime(collision_seg, delT);
+	int num_constraint = segTimeMap.size() * 2; // absolute value
 	cout << "[PolyTraj INFO]: " <<"expected inequality constriants: " << num_constraint << endl;
 
 	this->Cx.resize(num_constraint, dimension); this->Cx = 0;
@@ -387,8 +406,33 @@ void polyTraj::constructCd(const std::vector<int> &collision_idx, double radius,
 	this->dz.resize(num_constraint);this->dz = 0;
 
 	// add inequality constraints:
-	
+	int count_constraints = 0;
+	int count_constraints_total = 0;
+	for (std::map<int, std::vector<double>>::iterator it=segTimeMap.begin(); it != segTimeMap.end(); ++it){
+		int seg_idx = it->first;
+		std::vector<double> t_vec = it->second;
+		for (double t: t_vec){
+			int coeff_start_index = seg_idx * num_each_coeff;
+			for (int n=0; n<num_each_coeff; ++n){
+				this->Cx[count_constraints][coeff_start_index+n] = pow(t, n);
+				this->Cx[count_constraints+1][coeff_start_index+n] = -pow(t, n);
+				this->Cy[count_constraints][coeff_start_index+n] = pow(t, n);
+				this->Cy[count_constraints+1][coeff_start_index+n] = -pow(t, n);
+				this->Cz[count_constraints][coeff_start_index+n] = pow(t, n);
+				this->Cz[count_constraints+1][coeff_start_index+n] = -pow(t, n);
+			}
+			pose p = this->getPoseLineInterpolate(seg_idx, t);
+			this->dx[count_constraints] = -p.x + 5;
+			this->dx[count_constraints+1] = p.x + 5;
+			this->dy[count_constraints] = -p.y + 5;
+			this->dy[count_constraints+1] = p.y + 5;
+			this->dz[count_constraints] = -p.z + 5;
+			this->dz[count_constraints+1] = p.z + 5;
 
+			count_constraints += 2; count_constraints_total += 6;
+		}
+	}
+	cout << "[PolyTraj INFO]: " <<"number of inequality constriants: " << count_constraints_total << endl;
 }
 
 void polyTraj::optimize(){
@@ -502,5 +546,3 @@ void polyTraj::printTrajectory(){
 		}
 	}
 }
-
-
