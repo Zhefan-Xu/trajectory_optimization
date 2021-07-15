@@ -82,10 +82,9 @@ void polyTraj::adjustWaypoint(const std::vector<int> &collision_idx, double delT
 
 }
 
-void polyTraj::adjustCorridorConstraint(const std::vector<int> &collision_idx, double radius, double delT){
-	// TODO: implement adding corridor constraint (inequality)
+void polyTraj::adjustCorridorConstraint(const std::set<int> &collision_seg, double radius, double delT){
 	// Use bounding box instead of distance to path to save computation
-	this->constructCd(collision_idx, radius, delT);
+	this->constructCd(collision_seg, radius, delT);
 }
 
 
@@ -112,7 +111,9 @@ std::map<int, std::vector<double>> polyTraj::findCorridorConstraintTime(const st
 		double t = start_t; std::vector<double> t_arr;
 		while (t < end_t){
 			t += delT;
-			t_arr.push_back(t);
+			if (t < end_t){
+				t_arr.push_back(t);
+			}
 		}
 		segTimeMap[seg_idx] = t_arr;
 	}
@@ -383,18 +384,20 @@ void polyTraj::constructCd(){
 	
 }
 
-void polyTraj::constructCd(const std::vector<int> &collision_idx, double radius, double delT){ // collision index should be culmulated
+void polyTraj::constructCd(const std::set<int> &collision_seg, double radius, double delT){ // collision index should be culmulated
 	int num_path_segment = this->path.size() - 1;
 	int dimension = (this->degree+1) * num_path_segment;
 	int num_each_coeff = this->degree + 1;
 
 	// determine the number of constraint points:
-	std::set<int> collision_seg = this->findCollisionSegment(collision_idx, delT);
-	double f_delT = 2.0; delT *= f_delT;
+	double f_delT = 1.0; delT *= f_delT; // resolution of constraint points
 
 	// determine time to add constraints for each segment and store it into a std map
 	std::map<int, std::vector<double>> segTimeMap = this->findCorridorConstraintTime(collision_seg, delT);
-	int num_constraint = segTimeMap.size() * 2; // absolute value
+	int num_constraint = 0;
+	for (std::map<int, std::vector<double>>::iterator it=segTimeMap.begin(); it != segTimeMap.end(); ++it){
+		num_constraint += (it->second).size() * 2;
+	}
 	cout << "[PolyTraj INFO]: " <<"expected inequality constriants: " << num_constraint << endl;
 
 	this->Cx.resize(num_constraint, dimension); this->Cx = 0;
@@ -407,12 +410,11 @@ void polyTraj::constructCd(const std::vector<int> &collision_idx, double radius,
 
 	// add inequality constraints:
 	int count_constraints = 0;
-	int count_constraints_total = 0;
 	for (std::map<int, std::vector<double>>::iterator it=segTimeMap.begin(); it != segTimeMap.end(); ++it){
 		int seg_idx = it->first;
 		std::vector<double> t_vec = it->second;
+		int coeff_start_index = seg_idx * num_each_coeff;
 		for (double t: t_vec){
-			int coeff_start_index = seg_idx * num_each_coeff;
 			for (int n=0; n<num_each_coeff; ++n){
 				this->Cx[count_constraints][coeff_start_index+n] = pow(t, n);
 				this->Cx[count_constraints+1][coeff_start_index+n] = -pow(t, n);
@@ -422,17 +424,16 @@ void polyTraj::constructCd(const std::vector<int> &collision_idx, double radius,
 				this->Cz[count_constraints+1][coeff_start_index+n] = -pow(t, n);
 			}
 			pose p = this->getPoseLineInterpolate(seg_idx, t);
-			this->dx[count_constraints] = -p.x + 5;
-			this->dx[count_constraints+1] = p.x + 5;
-			this->dy[count_constraints] = -p.y + 5;
-			this->dy[count_constraints+1] = p.y + 5;
-			this->dz[count_constraints] = -p.z + 5;
-			this->dz[count_constraints+1] = p.z + 5;
-
-			count_constraints += 2; count_constraints_total += 6;
-		}
+			this->dx[count_constraints] = -p.x + radius;
+			this->dx[count_constraints+1] = p.x + radius;
+			this->dy[count_constraints] = -p.y + radius;
+			this->dy[count_constraints+1] = p.y + radius;
+			this->dz[count_constraints] = -p.z + radius;
+			this->dz[count_constraints+1] = p.z + radius;
+			count_constraints += 2; 
+		}		
 	}
-	cout << "[PolyTraj INFO]: " <<"number of inequality constriants: " << count_constraints_total << endl;
+	cout << "[PolyTraj INFO]: " <<"number of inequality constriants: " << count_constraints << endl;
 }
 
 void polyTraj::optimize(){
@@ -442,11 +443,13 @@ void polyTraj::optimize(){
 	int num_path_segment = this->path.size() - 1;
 	int dimension = ((this->degree+1) * 4) * num_path_segment;
 
-	quadprogpp::Vector<double> x_param, y_param, z_param, yaw_param;
+	quadprogpp::Vector<double> x_param, y_param, z_param;
+
 	double min_result_x = solve_quadprog(this->Qx, this->px, quadprogpp::t(this->Ax), this->bx, quadprogpp::t(this->Cx), this->dx, x_param);
 	double min_result_y = solve_quadprog(this->Qy, this->py, quadprogpp::t(this->Ay), this->by, quadprogpp::t(this->Cy), this->dy, y_param);
 	double min_result_z = solve_quadprog(this->Qz, this->pz, quadprogpp::t(this->Az), this->bz, quadprogpp::t(this->Cz), this->dz, z_param);
 
+	
 	this->x_param_sol = x_param;
 	this->y_param_sol = y_param;
 	this->z_param_sol = z_param;

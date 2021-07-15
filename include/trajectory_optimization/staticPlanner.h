@@ -34,13 +34,18 @@ std::vector<pose> staticPlanner(const ros::NodeHandle& nh, double res, double xs
 
 
 	// step 3: If collision: repeat solving corridor constraint until no collision:
-	int max_iter = 1; double radius = 1.0;
+	std::set<int> collision_seg;
+	for (int i=0; i<loadPath.size()-1; ++i){
+		collision_seg.insert(i);
+	}
+
+	int max_iter = 1; double radius = 0.5;
 	if (not valid){
 		cout << "[Planner INFO]: " << "adding corridor constraint..." << endl;
 		for (int i=0; i<max_iter; ++i){
-			polytrajOptimizer.adjustCorridorConstraint(collision_idx, radius, delT);
+			polytrajOptimizer.adjustCorridorConstraint(collision_seg, radius, delT);
 			polytrajOptimizer.optimize();
-			std::vector<pose> trajectory = polytrajOptimizer.getTrajectory(delT);
+			trajectory = polytrajOptimizer.getTrajectory(delT);
 			collision_idx.clear();
 			valid = mapModuleOctomap.checkCollisionTrajectory(trajectory, collision_idx);
 			if (valid){
