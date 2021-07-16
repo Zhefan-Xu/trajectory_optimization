@@ -79,10 +79,9 @@ void polyTraj::adjustWaypoint(const std::vector<int> &collision_idx, double delT
 	this->constructQp();
 	this->constructAb();
 	this->constructCd();
-
 }
 
-void polyTraj::adjustCorridorConstraint(const std::set<int> &collision_seg, double radius, double delT){
+void polyTraj::adjustCorridorConstraint(const std::set<int> &collision_seg, const std::vector<double> &radius, double delT){
 	// Use bounding box instead of distance to path to save computation
 	this->constructCd(collision_seg, radius, delT);
 }
@@ -384,7 +383,7 @@ void polyTraj::constructCd(){
 	
 }
 
-void polyTraj::constructCd(const std::set<int> &collision_seg, double radius, double delT){ // collision index should be culmulated
+void polyTraj::constructCd(const std::set<int> &collision_seg, const std::vector<double> &radius, double delT){ // collision index should be culmulated
 	int num_path_segment = this->path.size() - 1;
 	int dimension = (this->degree+1) * num_path_segment;
 	int num_each_coeff = this->degree + 1;
@@ -424,12 +423,12 @@ void polyTraj::constructCd(const std::set<int> &collision_seg, double radius, do
 				this->Cz[count_constraints+1][coeff_start_index+n] = -pow(t, n);
 			}
 			pose p = this->getPoseLineInterpolate(seg_idx, t);
-			this->dx[count_constraints] = -p.x + radius;
-			this->dx[count_constraints+1] = p.x + radius;
-			this->dy[count_constraints] = -p.y + radius;
-			this->dy[count_constraints+1] = p.y + radius;
-			this->dz[count_constraints] = -p.z + radius/2;
-			this->dz[count_constraints+1] = p.z + radius/2;
+			this->dx[count_constraints] = -p.x + radius[seg_idx];
+			this->dx[count_constraints+1] = p.x + radius[seg_idx];
+			this->dy[count_constraints] = -p.y + radius[seg_idx];
+			this->dy[count_constraints+1] = p.y + radius[seg_idx];
+			this->dz[count_constraints] = -p.z + radius[seg_idx]/2;
+			this->dz[count_constraints+1] = p.z + radius[seg_idx]/2;
 			count_constraints += 2; 
 		}		
 	}

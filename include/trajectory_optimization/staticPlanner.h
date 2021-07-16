@@ -3,6 +3,7 @@
 #include <ros/ros.h>
 #include <trajectory_optimization/mapModuleOctomap.h>
 #include <trajectory_optimization/polyTrajGen.h>
+#include <algorithm>
 
 
 std::vector<pose> staticPlanner(const ros::NodeHandle& nh, double res, double xsize, double ysize, double zsize,
@@ -33,7 +34,10 @@ std::vector<pose> staticPlanner(const ros::NodeHandle& nh, double res, double xs
 		collision_seg.insert(i);
 	}
 
-	int max_iter = 10; double radius = 0.5;
+	int max_iter = 10; std::vector<double> radius; double init_radius = 0.5; // TODO: adaptive radius
+	for (int i=0; i<collision_seg.size(); ++i){// add initial radius
+		radius.push_back(init_radius);
+	}
 	std::vector<pose> trajectory;
 	std::vector<int> collision_idx;
 	bool valid = false;
@@ -48,8 +52,13 @@ std::vector<pose> staticPlanner(const ros::NodeHandle& nh, double res, double xs
 			if (valid){
 				break;
 			}
-			radius *= 0.9;
-			cout << "[Planner INFO]: " << "radius: " << radius << endl;
+
+			for (int j=0; j<radius.size(); ++j){
+				radius[j] *= 0.9;
+			}
+			double min_radius = *min_element(radius.begin(), radius.end());
+
+			cout << "[Planner INFO]: " << "min radius: " << min_radius << endl;
 		}
 	}
 
