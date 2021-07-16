@@ -428,8 +428,8 @@ void polyTraj::constructCd(const std::set<int> &collision_seg, double radius, do
 			this->dx[count_constraints+1] = p.x + radius;
 			this->dy[count_constraints] = -p.y + radius;
 			this->dy[count_constraints+1] = p.y + radius;
-			this->dz[count_constraints] = -p.z + radius;
-			this->dz[count_constraints+1] = p.z + radius;
+			this->dz[count_constraints] = -p.z + radius/2;
+			this->dz[count_constraints+1] = p.z + radius/2;
 			count_constraints += 2; 
 		}		
 	}
