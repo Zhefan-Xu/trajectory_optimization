@@ -34,7 +34,7 @@ std::vector<pose> staticPlanner(const ros::NodeHandle& nh, double res, double xs
 		collision_seg.insert(i);
 	}
 
-	int max_iter = 10; std::vector<double> radius; double init_radius = 0.5; // TODO: adaptive radius
+	int max_iter = 10; std::vector<double> radius; double init_radius = 0.5; // adaptive radius
 	for (int i=0; i<collision_seg.size(); ++i){// add initial radius
 		radius.push_back(init_radius);
 	}
@@ -52,9 +52,10 @@ std::vector<pose> staticPlanner(const ros::NodeHandle& nh, double res, double xs
 			if (valid){
 				break;
 			}
+			std::set<int> radius_adjust_collision_idx = polytrajOptimizer.findCollisionSegment(collision_idx, delT);
 
-			for (int j=0; j<radius.size(); ++j){
-				radius[j] *= 0.9;
+			for (int adjust_idx: radius_adjust_collision_idx){
+				radius[adjust_idx] *= 0.9;
 			}
 			double min_radius = *min_element(radius.begin(), radius.end());
 

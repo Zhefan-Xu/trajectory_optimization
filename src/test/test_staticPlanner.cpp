@@ -11,7 +11,7 @@ int main(int argc, char** argv){
 	// read data and load data
 	std::string filename = "/home/zhefan/catkin_ws/src/trajectory_optimization/path/waypoint_maze_complete.txt";
 	std::vector<std::vector<pose>> paths = read_waypoint_file(filename);
-	std::vector<pose> path = paths[38];
+	std::vector<pose> path = paths[30];
 
 	// parameters
 	double res = 0.1; // map resolution
