@@ -122,6 +122,9 @@ include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   "/usr/local/include/QuadProg++"
+  "/home/zhefan/Packages/ACADOtoolkit"
+  "/home/zhefan/Packages/ACADOtoolkit/acado"
+  "/home/zhefan/Packages/ACADOtoolkit/utils"
 )
 
 ## Declare a C++ library
@@ -131,6 +134,7 @@ include_directories(
 add_library(polyTrajGen src/polyTrajGen.cpp)
 add_library(mapModuleOctomap src/mapModuleOctomap.cpp)
 add_library(timeOptimizer src/timeOptimizer.cpp)
+add_library(mpcPlanner src/mpcPlanner.cpp)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -147,6 +151,8 @@ add_executable(test_quadprog src/test/test_quadprog.cpp)
 add_executable(test_mapModuleOctomap src/test/test_mapModuleOctomap.cpp)
 add_executable(test_timeOptimizer src/test/test_timeOptimizer.cpp)
 add_executable(test_staticPlanner src/test/test_staticPlanner.cpp)
+add_executable(test_acado src/test/test_acado.cpp)
+add_executable(test_mpcPlanner src/test/test_mpcPlanner.cpp)
 # add_executable(test_eigen src/test_eigen.cpp)
 
 ## Rename C++ executable without prefix
@@ -173,6 +179,9 @@ target_link_libraries(mapModuleOctomap ${catkin_LIBRARIES})
 target_link_libraries(test_mapModuleOctomap ${catkin_LIBRARIES} mapModuleOctomap polyTrajGen)
 target_link_libraries(test_timeOptimizer ${catkin_LIBRARIES} mapModuleOctomap polyTrajGen timeOptimizer)
 target_link_libraries(test_staticPlanner ${catkin_LIBRARIES} mapModuleOctomap polyTrajGen)
+target_link_libraries(test_acado ${catkin_LIBRARIES} "/home/zhefan/Packages/ACADOtoolkit/build/lib/libacado_toolkit_s.so")
+target_link_libraries(mpcPlanner "/home/zhefan/Packages/ACADOtoolkit/build/lib/libacado_toolkit_s.so")
+target_link_libraries(test_mpcPlanner ${catkin_LIBRARIES} mpcPlanner)
 
 # target_link_libraries(test_eigen ${catkin_LIBRARIES})
 
