@@ -41,116 +41,145 @@ USING_NAMESPACE_ACADO
 
 int main( )
 {
-    // INTRODUCE THE VARIABLES:
-    // -------------------------
-	DifferentialState xB;
-	DifferentialState xW;
-	DifferentialState vB;
-	DifferentialState vW;
+ //    // INTRODUCE THE VARIABLES:
+ //    // -------------------------
+	// DifferentialState xB;
+	// DifferentialState xW;
+	// DifferentialState vB;
+	// DifferentialState vW;
 
-	Control R;
-	Control F;
+	// Control R;
+	// Control F;
 
-	double mB = 350.0;
-	double mW = 50.0;
-	double kS = 20000.0;
-	double kT = 200000.0;
-
-
-    // DEFINE A DIFFERENTIAL EQUATION:
-    // -------------------------------
-    DifferentialEquation f;
-
-	f << dot(xB) == vB;
-	f << dot(xW) == vW;
-	f << dot(vB) == ( -kS*xB + kS*xW + F ) / mB;
-	f << dot(vW) == (  kS*xB - (kT+kS)*xW + kT*R - F ) / mW;
+	// double mB = 350.0;
+	// double mW = 50.0;
+	// double kS = 20000.0;
+	// double kT = 200000.0;
 
 
-    // DEFINE LEAST SQUARE FUNCTION:
-    // -----------------------------
-    Function h;
+ //    // DEFINE A DIFFERENTIAL EQUATION:
+ //    // -------------------------------
+ //    DifferentialEquation f;
 
-    h << xB;
-    h << xW;
-	h << vB;
-    h << vW;
-
-    DMatrix Q(4,4);
-    Q.setIdentity();
-	Q(0,0) = 10.0;
-	Q(1,1) = 10.0;
-
-    DVector r(4);
-    r.setAll( 0.0 );
+	// f << dot(xB) == vB;
+	// f << dot(xW) == vW;
+	// f << dot(vB) == ( -kS*xB + kS*xW + F ) / mB;
+	// f << dot(vW) == (  kS*xB - (kT+kS)*xW + kT*R - F ) / mW;
 
 
-    // DEFINE AN OPTIMAL CONTROL PROBLEM:
-    // ----------------------------------
-    const double t_start = 0.0;
-    const double t_end   = 1.0;
+ //    // DEFINE LEAST SQUARE FUNCTION:
+ //    // -----------------------------
+ //    Function h;
 
-    OCP ocp( t_start, t_end, 20 );
+ //    h << xB;
+ //    h << xW;
+	// h << vB;
+ //    h << vW;
 
-    ocp.minimizeLSQ( Q, h, r );
+ //    DMatrix Q(4,4);
+ //    Q.setIdentity();
+	// Q(0,0) = 10.0;
+	// Q(1,1) = 10.0;
 
-	ocp.subjectTo( f );
-
-	ocp.subjectTo( -500.0 <= F <= 500.0 );
-	ocp.subjectTo( R == 0.0 );
+ //    DVector r(4);
+ //    r.setAll( 0.0 );
 
 
+ //    // DEFINE AN OPTIMAL CONTROL PROBLEM:
+ //    // ----------------------------------
+ //    const double t_start = 0.0;
+ //    const double t_end   = 1.0;
 
-    // SETTING UP THE (SIMULATED) PROCESS:
-    // -----------------------------------
-	OutputFcn identity;
-	DynamicSystem dynamicSystem( f,identity );
+ //    OCP ocp( t_start, t_end, 20 );
 
-	Process process( dynamicSystem,INT_RK45 );
+ //    ocp.minimizeLSQ( Q, h, r );
 
-    // SETTING UP THE MPC CONTROLLER:
-    // ------------------------------
-	RealTimeAlgorithm alg( ocp,0.05 );
-	alg.set( MAX_NUM_ITERATIONS, 2 );
+	// ocp.subjectTo( f );
+
+	// ocp.subjectTo( -500.0 <= F <= 500.0 );
+	// ocp.subjectTo( R == 0.0 );
+
+
+
+ //    // SETTING UP THE (SIMULATED) PROCESS:
+ //    // -----------------------------------
+	// OutputFcn identity;
+	// DynamicSystem dynamicSystem( f,identity );
+
+	// Process process( dynamicSystem,INT_RK45 );
+
+ //    // SETTING UP THE MPC CONTROLLER:
+ //    // ------------------------------
+	// RealTimeAlgorithm alg( ocp,0.05 );
+	// alg.set( MAX_NUM_ITERATIONS, 2 );
 	
-	StaticReferenceTrajectory zeroReference;
+	// StaticReferenceTrajectory zeroReference;
 
-	Controller controller( alg,zeroReference );
+	// Controller controller( alg,zeroReference );
 
 
-    // SETTING UP THE SIMULATION ENVIRONMENT,  RUN THE EXAMPLE...
-    // ----------------------------------------------------------
-	SimulationEnvironment sim( 0.0,3.0,process,controller );
+ //    // SETTING UP THE SIMULATION ENVIRONMENT,  RUN THE EXAMPLE...
+ //    // ----------------------------------------------------------
+	// SimulationEnvironment sim( 0.0,3.0,process,controller );
 
-	DVector x0(4);
-	x0(0) = 0.01;
-	x0(1) = 0.0;
-	x0(2) = 0.0;
-	x0(3) = 0.0;
+	// DVector x0(4);
+	// x0(0) = 0.01;
+	// x0(1) = 0.0;
+	// x0(2) = 0.0;
+	// x0(3) = 0.0;
 
-	if (sim.init( x0 ) != SUCCESSFUL_RETURN)
-		exit( EXIT_FAILURE );
-	if (sim.run( ) != SUCCESSFUL_RETURN)
-		exit( EXIT_FAILURE );
+	// if (sim.init( x0 ) != SUCCESSFUL_RETURN)
+	// 	exit( EXIT_FAILURE );
+	// if (sim.run( ) != SUCCESSFUL_RETURN)
+	// 	exit( EXIT_FAILURE );
 
-    // ...AND PLOT THE RESULTS
-    // ----------------------------------------------------------
-	VariablesGrid sampledProcessOutput;
-	sim.getSampledProcessOutput( sampledProcessOutput );
+ //    // ...AND PLOT THE RESULTS
+ //    // ----------------------------------------------------------
+	// VariablesGrid sampledProcessOutput;
+	// sim.getSampledProcessOutput( sampledProcessOutput );
 
-	VariablesGrid feedbackControl;
-	sim.getFeedbackControl( feedbackControl );
+	// VariablesGrid feedbackControl;
+	// sim.getFeedbackControl( feedbackControl );
 
-	GnuplotWindow window;
-	window.addSubplot( sampledProcessOutput(0), "Body Position [m]" );
-	window.addSubplot( sampledProcessOutput(1), "Wheel Position [m]" );
-	window.addSubplot( sampledProcessOutput(2), "Body Velocity [m/s]" );
-	window.addSubplot( sampledProcessOutput(3), "Wheel Velocity [m/s]" );
-	window.addSubplot( feedbackControl(1),      "Damping Force [N]" );
-	window.addSubplot( feedbackControl(0),      "Road Excitation [m]" );
-	window.plot( );
+	// GnuplotWindow window;
+	// window.addSubplot( sampledProcessOutput(0), "Body Position [m]" );
+	// window.addSubplot( sampledProcessOutput(1), "Wheel Position [m]" );
+	// window.addSubplot( sampledProcessOutput(2), "Body Velocity [m/s]" );
+	// window.addSubplot( sampledProcessOutput(3), "Wheel Velocity [m/s]" );
+	// window.addSubplot( feedbackControl(1),      "Damping Force [N]" );
+	// window.addSubplot( feedbackControl(0),      "Road Excitation [m]" );
+	// window.plot( );
 
-    return EXIT_SUCCESS;
+ //    return EXIT_SUCCESS;
+
+
+    double tStart =  0.0;
+	double tEnd   =  2.0;
+
+	VariablesGrid equidistantGrid(2, tStart, tEnd, 5);
+
+	equidistantGrid.setZero();
+
+	DVector v(2);
+	v(0) = 1.0;
+	v(1) = 2.0;
+	equidistantGrid.setVector(1, v);
+	equidistantGrid.setVector(2, v);
+
+	v.setAll(5.0);
+	equidistantGrid.setVector(3, v);
+	equidistantGrid.setVector(4, v);
+
+	cout << "The grid consists of the following grid points:\n"
+		 << equidistantGrid
+		 << "Its number of grid points is:  " <<  equidistantGrid.getNumPoints() << endl
+		 << "Each vector has dimension:     " <<  equidistantGrid.getNumValues() << endl;
+
+	VariablesGrid testg(4, 0);
+	cout << "test grid: \n" << testg << endl;
+	DVector pose1 (4); pose1(0) = 0; pose1(1) = 1; pose1(2) = 2; pose1(3) = 3;
+	testg.addVector(pose1, 0.5);
+	cout << "test grid after: \n" << testg << endl;
 }
 
 
