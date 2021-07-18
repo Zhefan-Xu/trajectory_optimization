@@ -181,7 +181,7 @@ target_link_libraries(test_timeOptimizer ${catkin_LIBRARIES} mapModuleOctomap po
 target_link_libraries(test_staticPlanner ${catkin_LIBRARIES} mapModuleOctomap polyTrajGen)
 target_link_libraries(test_acado ${catkin_LIBRARIES} "/home/zhefan/Packages/ACADOtoolkit/build/lib/libacado_toolkit_s.so")
 target_link_libraries(mpcPlanner "/home/zhefan/Packages/ACADOtoolkit/build/lib/libacado_toolkit_s.so")
-target_link_libraries(test_mpcPlanner ${catkin_LIBRARIES} mpcPlanner)
+target_link_libraries(test_mpcPlanner ${catkin_LIBRARIES} mpcPlanner polyTrajGen mapModuleOctomap)
 
 # target_link_libraries(test_eigen ${catkin_LIBRARIES})
 
