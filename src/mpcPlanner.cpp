@@ -74,9 +74,6 @@ void mpcPlanner::optimize(int start_idx){
 	Control pitch_d;
 	Control yawdot_d;
 
-	double g = this->g; double tau_roll = this->tau_roll; double k_roll = this->k_roll;
-	double tau_pitch = this->tau_pitch; double k_pitch = this->k_pitch;
-
 	// MODEL Definition
 	DifferentialEquation f;
 	f << dot(x) == vx;
@@ -84,9 +81,9 @@ void mpcPlanner::optimize(int start_idx){
 	f << dot(z) == vz;
 	f << dot(vx) == T*cos(roll)*sin(pitch)*cos(yaw) + T*sin(roll)*sin(yaw); 
 	f << dot(vy) == T*cos(roll)*sin(pitch)*sin(yaw) - T*sin(roll)*cos(yaw);
-	f << dot(vz) == T*cos(roll)*cos(pitch) - g;
-	f << dot(roll) == (1.0/tau_roll) * (k_roll * roll_d - roll);
-	f << dot(pitch) == (1.0/tau_pitch) * (k_pitch * pitch_d - pitch);
+	f << dot(vz) == T*cos(roll)*cos(pitch) - this->g;
+	f << dot(roll) == (1.0/this->tau_roll) * (this->k_roll * roll_d - roll);
+	f << dot(pitch) == (1.0/this->tau_pitch) * (this->k_pitch * pitch_d - pitch);
 	f << dot(yaw) == yawdot_d;
 
 	// Least Square Function
@@ -97,14 +94,13 @@ void mpcPlanner::optimize(int start_idx){
 	h << yaw;
 
 	DMatrix Q(4,4);
-    Q.setIdentity(); Q(0,0) = 100.0; Q(1,1) = 100.0; Q(2,2) = 100.0;
+    Q.setIdentity(); Q(0,0) = 10.0; Q(1,1) = 10.0; Q(2,2) = 10.0;
 	
 	// get tracking trajectory (future N seconds)
 	VariablesGrid r = this->getReference(start_idx, this->horizon);
 	DVector start_pose_vec = r.getVector(0);
 	double start_x = start_pose_vec[0]; double start_y = start_pose_vec[1]; double start_z = start_pose_vec[2]; double start_yaw = start_pose_vec[3];
 
-	
 
 	// setup OCP
 	OCP ocp1(r);
@@ -136,10 +132,12 @@ void mpcPlanner::optimize(int start_idx){
 	cout << "[MPC INFO]: " << "start optimizing..." << endl;
 
 	// Algorithm
-	OptimizationAlgorithm algorithm(ocp);
-	// algorithm.set( HESSIAN_APPROXIMATION, GAUSS_NEWTON_WITH_BLOCK_BFGS )	;
-	algorithm.set( KKT_TOLERANCE, 1e-6 );
-	algorithm.solve();
+	// OptimizationAlgorithm algorithm(ocp);
+	RealTimeAlgorithm algorithm(ocp, this->delT);
+
+	// algorithm.solve();
+	DVector _x (9); _x.setAll(0.0); _x(0) = start_x; _x(1) = start_y; _x(2) = start_z; _x(8) = start_yaw; 
+	algorithm.solve(0, _x);
 
 	cout << "[MPC INFO]: " << "Complete!" << endl;
 

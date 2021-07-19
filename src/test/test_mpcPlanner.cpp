@@ -2,6 +2,9 @@
 #include <trajectory_optimization/readfile.h>
 #include <trajectory_optimization/mpcPlanner.h>
 #include <trajectory_optimization/staticPlanner.h>
+#include <chrono> 
+
+using namespace std::chrono;
 
 int main(int argc, char** argv){
 	ros::init(argc, argv, "test_mpcPlanner_node");
@@ -16,7 +19,7 @@ int main(int argc, char** argv){
 	double res = 0.1; // map resolution
 	double xsize = 0.2; double ysize = 0.2; double zsize = 0.1; // Robot collision box size
 	int degree = 7; // polynomial degree
-	double velocityd = 1; // desired average velocity
+	double velocityd = 3; // desired average velocity
 	int diff_degree = 4; // Minimum snap (4), minimum jerk (3)
 	double perturb = 1; // Regularization term and also make PSD -> PD
 	bool shortcut = true; // shortcut waypoints
@@ -37,7 +40,11 @@ int main(int argc, char** argv){
 	mp.loadRefTrajectory(trajectory, delT);
 
 	int start_index = 0;
+	auto start_time = high_resolution_clock::now();
 	mp.optimize(start_index);
+	auto end_time = high_resolution_clock::now();
+	auto duration_total = duration_cast<microseconds>(end_time - start_time);
+	cout << "Total: "<< duration_total.count()/1e6 << " seconds. " << endl;
 
 
 	return 0;
