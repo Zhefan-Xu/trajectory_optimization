@@ -25,6 +25,8 @@ private:
 	std::vector<pose> ref_trajectory;
 	double delT;
 
+	OCP ocp;
+
 public:
 	mpcPlanner();
 	mpcPlanner(int _horizon);

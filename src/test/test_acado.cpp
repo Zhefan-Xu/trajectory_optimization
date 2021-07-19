@@ -41,145 +41,154 @@ USING_NAMESPACE_ACADO
 
 int main( )
 {
- //    // INTRODUCE THE VARIABLES:
- //    // -------------------------
-	// DifferentialState xB;
-	// DifferentialState xW;
-	// DifferentialState vB;
-	// DifferentialState vW;
-
-	// Control R;
-	// Control F;
-
-	// double mB = 350.0;
-	// double mW = 50.0;
-	// double kS = 20000.0;
-	// double kT = 200000.0;
 
 
- //    // DEFINE A DIFFERENTIAL EQUATION:
- //    // -------------------------------
- //    DifferentialEquation f;
 
-	// f << dot(xB) == vB;
-	// f << dot(xW) == vW;
-	// f << dot(vB) == ( -kS*xB + kS*xW + F ) / mB;
-	// f << dot(vW) == (  kS*xB - (kT+kS)*xW + kT*R - F ) / mW;
+    // INTRODUCE THE VARIABLES:
+    // -------------------------
+	// DifferentialState xBody;
+	// DifferentialState xWheel;
+	// DifferentialState vBody;
+	// DifferentialState vWheel;
+
+	DifferentialState x;
+	DifferentialState y;
+	DifferentialState z;
+	DifferentialState vx;
+	DifferentialState vy;
+	DifferentialState vz;
+	DifferentialState roll;
+	DifferentialState pitch;
+	DifferentialState yaw;
+
+	Control T;
+	Control roll_d;
+	Control pitch_d;
+	Control yawdot_d;
+
+	// Disturbance roadExcitation;
+
+	// Control dampingForce;
+
+	// double mBody   = 350.0;
+	// double mWheel  = 50.0;
+	// double kSpring = 20000.0;
+	// double kTire   = 200000.0;
 
 
- //    // DEFINE LEAST SQUARE FUNCTION:
- //    // -----------------------------
+    // DEFINE A DIFFERENTIAL EQUATION:
+    // -------------------------------
+    // DifferentialEquation f;
+
+	// f << dot(xBody)  == vBody;
+	// f << dot(xWheel) == vWheel;
+	// f << dot(vBody)  == ( -kSpring*xBody + kSpring*xWheel + dampingForce ) / mBody;
+	// f << dot(vWheel) == ( -kTire*xBody - (kTire+kSpring)*xWheel + kTire*roadExcitation - dampingForce ) / mWheel;
+
+	DifferentialEquation f;
+	f << dot(x) == vx;
+	f << dot(y) == vy;
+	f << dot(z) == vz;
+	f << dot(vx) == T*cos(roll)*sin(pitch)*cos(yaw) + T*sin(roll)*sin(yaw); 
+	f << dot(vy) == T*cos(roll)*sin(pitch)*sin(yaw) - T*sin(roll)*cos(yaw);
+	f << dot(vz) == T*cos(roll)*cos(pitch) - 9.8;
+	f << dot(roll) == (1.0/1) * (1 * roll_d - roll);
+	f << dot(pitch) == (1.0/1) * (1 * pitch_d - pitch);
+	f << dot(yaw) == yawdot_d;
+
+
+    // DEFINE LEAST SQUARE FUNCTION:
+    // -----------------------------
  //    Function h;
 
- //    h << xB;
- //    h << xW;
-	// h << vB;
- //    h << vW;
+ //    h << xBody;
+ //    h << xWheel;
+	// h << vBody;
+ //    h << vWheel;
 
- //    DMatrix Q(4,4);
- //    Q.setIdentity();
-	// Q(0,0) = 10.0;
-	// Q(1,1) = 10.0;
+	Function h;
+	h << x;
+	h << y;
+	h << z;
+	h << yaw;
 
- //    DVector r(4);
- //    r.setAll( 0.0 );
+    DMatrix S(4,4);
+    DVector r(4);
 
+    S.setIdentity();
+	S(0,0) = 10.0;
+	S(1,1) = 10.0;
 
- //    // DEFINE AN OPTIMAL CONTROL PROBLEM:
- //    // ----------------------------------
- //    const double t_start = 0.0;
- //    const double t_end   = 1.0;
-
- //    OCP ocp( t_start, t_end, 20 );
-
- //    ocp.minimizeLSQ( Q, h, r );
-
-	// ocp.subjectTo( f );
-
-	// ocp.subjectTo( -500.0 <= F <= 500.0 );
-	// ocp.subjectTo( R == 0.0 );
+    r.setAll( 0.0 );
 
 
+    // DEFINE AN OPTIMAL CONTROL PROBLEM:
+    // ----------------------------------
+    const double t_start = 0.0;
+    const double t_end   = 1.0;
 
- //    // SETTING UP THE (SIMULATED) PROCESS:
- //    // -----------------------------------
-	// OutputFcn identity;
-	// DynamicSystem dynamicSystem( f,identity );
+    OCP ocp( t_start, t_end, 20 );
 
-	// Process process( dynamicSystem,INT_RK45 );
+    ocp.minimizeLSQ( S, h, r );
+	//ocp.minimizeLagrangeTerm( 0.5*(10.0*xBody*xBody + 10.0*xWheel*xWheel + vBody*vBody + vWheel*vWheel ) );
 
- //    // SETTING UP THE MPC CONTROLLER:
- //    // ------------------------------
-	// RealTimeAlgorithm alg( ocp,0.05 );
-	// alg.set( MAX_NUM_ITERATIONS, 2 );
-	
-	// StaticReferenceTrajectory zeroReference;
+	ocp.subjectTo( f );
+	ocp.subjectTo( AT_START, x  == 1 );
+	ocp.subjectTo( AT_START, y == 1 );
+	ocp.subjectTo( AT_START, z  == 1 );
+	ocp.subjectTo( AT_START, vx == 0.0 );
+	ocp.subjectTo( AT_START, vy == 0.0 );
+	ocp.subjectTo( AT_START, vz == 0.0 );
 
-	// Controller controller( alg,zeroReference );
+	ocp.subjectTo( AT_START, roll == 0.0 );
+	ocp.subjectTo( AT_START, pitch == 0.0 );
+	ocp.subjectTo( AT_START, yaw == 0.0 );
 
+	ocp.subjectTo( 0 <= T <= 2 ); 
+	ocp.subjectTo( -0.5 <= roll_d <= 0.5);
+	ocp.subjectTo( -0.5 <= pitch_d <= 0.5);
+	ocp.subjectTo( -0.5 <= yawdot_d <= 0.5);
 
- //    // SETTING UP THE SIMULATION ENVIRONMENT,  RUN THE EXAMPLE...
- //    // ----------------------------------------------------------
-	// SimulationEnvironment sim( 0.0,3.0,process,controller );
+	// ocp.subjectTo( AT_START, xBody  == 0.01 );
+	// ocp.subjectTo( AT_START, xWheel == 0.0 );
+	// ocp.subjectTo( AT_START, vBody  == 0.0 );
+	// ocp.subjectTo( AT_START, vWheel == 0.0 );
 
-	// DVector x0(4);
-	// x0(0) = 0.01;
-	// x0(1) = 0.0;
-	// x0(2) = 0.0;
-	// x0(3) = 0.0;
-
-	// if (sim.init( x0 ) != SUCCESSFUL_RETURN)
-	// 	exit( EXIT_FAILURE );
-	// if (sim.run( ) != SUCCESSFUL_RETURN)
-	// 	exit( EXIT_FAILURE );
-
- //    // ...AND PLOT THE RESULTS
- //    // ----------------------------------------------------------
-	// VariablesGrid sampledProcessOutput;
-	// sim.getSampledProcessOutput( sampledProcessOutput );
-
-	// VariablesGrid feedbackControl;
-	// sim.getFeedbackControl( feedbackControl );
-
-	// GnuplotWindow window;
-	// window.addSubplot( sampledProcessOutput(0), "Body Position [m]" );
-	// window.addSubplot( sampledProcessOutput(1), "Wheel Position [m]" );
-	// window.addSubplot( sampledProcessOutput(2), "Body Velocity [m/s]" );
-	// window.addSubplot( sampledProcessOutput(3), "Wheel Velocity [m/s]" );
-	// window.addSubplot( feedbackControl(1),      "Damping Force [N]" );
-	// window.addSubplot( feedbackControl(0),      "Road Excitation [m]" );
-	// window.plot( );
-
- //    return EXIT_SUCCESS;
+	// ocp.subjectTo( -500.0 <= dampingForce <= 500.0 );
+	// ocp.subjectTo( roadExcitation == 0.0 );
 
 
-    double tStart =  0.0;
-	double tEnd   =  2.0;
+    // Additionally, flush a plotting object
+ //    GnuplotWindow window1;//( PLOT_AT_EACH_ITERATION );
+	// window1.addSubplot( xBody, "Body Position [m]" );
+	// window1.addSubplot( xWheel,"Wheel Position [m]" );
+	// window1.addSubplot( vBody, "Body Velocity [m/s]" );
+	// window1.addSubplot( vWheel,"Wheel Velocity [m/s]" );
 
-	VariablesGrid equidistantGrid(2, tStart, tEnd, 5);
+	// window1.addSubplot( dampingForce,"Damping Force [N]" );
+	// window1.addSubplot( roadExcitation,"Road Excitation [m]" );
 
-	equidistantGrid.setZero();
 
-	DVector v(2);
-	v(0) = 1.0;
-	v(1) = 2.0;
-	equidistantGrid.setVector(1, v);
-	equidistantGrid.setVector(2, v);
+    // DEFINE AN OPTIMIZATION ALGORITHM AND SOLVE THE OCP:
+    // ---------------------------------------------------
+    OptimizationAlgorithm algorithm(ocp);
 
-	v.setAll(5.0);
-	equidistantGrid.setVector(3, v);
-	equidistantGrid.setVector(4, v);
+    // algorithm << window1;
 
-	cout << "The grid consists of the following grid points:\n"
-		 << equidistantGrid
-		 << "Its number of grid points is:  " <<  equidistantGrid.getNumPoints() << endl
-		 << "Each vector has dimension:     " <<  equidistantGrid.getNumValues() << endl;
+ // algorithm.set( HESSIAN_APPROXIMATION, EXACT_HESSIAN );
+ //  algorithm.set( HESSIAN_APPROXIMATION, GAUSS_NEWTON );
+	// algorithm.set( HESSIAN_APPROXIMATION, GAUSS_NEWTON_WITH_BLOCK_BFGS );
 
-	VariablesGrid testg(4, 0);
-	cout << "test grid: \n" << testg << endl;
-	DVector pose1 (4); pose1(0) = 0; pose1(1) = 1; pose1(2) = 2; pose1(3) = 3;
-	testg.addVector(pose1, 0.5);
-	cout << "test grid after: \n" << testg << endl;
+	//algorithm.set( INTEGRATOR_TOLERANCE, 1e-8 );
+	// algorithm.set( KKT_TOLERANCE, 1e-6 );
+	//algorithm.set( GLOBALIZATION_STRATEGY, GS_FULLSTEP );
+	//algorithm.set( MAX_NUM_ITERATIONS, 1 );
+
+	algorithm.solve();
+		VariablesGrid xd;
+	algorithm.getDifferentialStates(xd); // get solutions
+
+	cout << xd << endl;
 }
 
 

@@ -16,11 +16,11 @@ int main(int argc, char** argv){
 	double res = 0.1; // map resolution
 	double xsize = 0.2; double ysize = 0.2; double zsize = 0.1; // Robot collision box size
 	int degree = 7; // polynomial degree
-	double velocityd = 2; // desired average velocity
+	double velocityd = 1; // desired average velocity
 	int diff_degree = 4; // Minimum snap (4), minimum jerk (3)
 	double perturb = 1; // Regularization term and also make PSD -> PD
 	bool shortcut = true; // shortcut waypoints
-	double delT = 0.1; // resolution of the final trajectory
+	double delT = 0.2; // resolution of the final trajectory
 	std::vector<pose> loadPath;
 
 	// solve trajectory:
@@ -28,8 +28,9 @@ int main(int argc, char** argv){
 
 
 	int horizon = 20; // MPC horizon
-	double T_max = 2.5; double roll_max = PI_const/6; double pitch_max = PI_const/6; double yawdot_max = PI_const/6;
+
 	double mass = 1.0; double k_roll = 1.0; double tau_roll = 1.0; double k_pitch = 1.0; double tau_pitch = 1.0; 
+	double T_max = 3 * mass * 9.8; double roll_max = PI_const/6; double pitch_max = PI_const/6; double yawdot_max = PI_const/2;
 	mpcPlanner mp (horizon);
 	mp.loadParameters(mass, k_roll, tau_roll, k_pitch, tau_pitch);
 	mp.loadControlLimits(T_max, roll_max, pitch_max, yawdot_max);

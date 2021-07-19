@@ -74,6 +74,9 @@ void mpcPlanner::optimize(int start_idx){
 	Control pitch_d;
 	Control yawdot_d;
 
+	double g = this->g; double tau_roll = this->tau_roll; double k_roll = this->k_roll;
+	double tau_pitch = this->tau_pitch; double k_pitch = this->k_pitch;
+
 	// MODEL Definition
 	DifferentialEquation f;
 	f << dot(x) == vx;
@@ -81,9 +84,9 @@ void mpcPlanner::optimize(int start_idx){
 	f << dot(z) == vz;
 	f << dot(vx) == T*cos(roll)*sin(pitch)*cos(yaw) + T*sin(roll)*sin(yaw); 
 	f << dot(vy) == T*cos(roll)*sin(pitch)*sin(yaw) - T*sin(roll)*cos(yaw);
-	f << dot(vz) == T*cos(roll)*cos(pitch) - this->g;
-	f << dot(roll) == (1/this->tau_roll) * (this->k_roll * roll_d - roll);
-	f << dot(pitch) == (1/this->tau_pitch) * (this->k_pitch * pitch_d - pitch);
+	f << dot(vz) == T*cos(roll)*cos(pitch) - g;
+	f << dot(roll) == (1.0/tau_roll) * (k_roll * roll_d - roll);
+	f << dot(pitch) == (1.0/tau_pitch) * (k_pitch * pitch_d - pitch);
 	f << dot(yaw) == yawdot_d;
 
 	// Least Square Function
@@ -94,24 +97,32 @@ void mpcPlanner::optimize(int start_idx){
 	h << yaw;
 
 	DMatrix Q(4,4);
-    Q.setIdentity(); Q(0,0) = 10.0; Q(1,1) = 10.0; Q(2,2) = 10.0;
+    Q.setIdentity(); Q(0,0) = 100.0; Q(1,1) = 100.0; Q(2,2) = 100.0;
 	
 	// get tracking trajectory (future N seconds)
 	VariablesGrid r = this->getReference(start_idx, this->horizon);
+	DVector start_pose_vec = r.getVector(0);
+	double start_x = start_pose_vec[0]; double start_y = start_pose_vec[1]; double start_z = start_pose_vec[2]; double start_yaw = start_pose_vec[3];
 
+	
 
 	// setup OCP
-	double t_start = r.getFirstTime(); double t_end = r.getLastTime();
-	OCP ocp(t_start, t_end, this->horizon);
+	OCP ocp1(r);
+	ocp = ocp1; 
+
+
 	ocp.minimizeLSQ(Q, h, r); // Objective
 
 	// Initial Condition Constraint:
-	ocp.subjectTo( AT_START, x  == 0.01 );
-	ocp.subjectTo( AT_START, y == 0.0 );
-	ocp.subjectTo( AT_START, z  == 0.0 );
+	ocp.subjectTo( AT_START, x  == start_x );
+	ocp.subjectTo( AT_START, y == start_y);
+	ocp.subjectTo( AT_START, z  == start_z);
+	ocp.subjectTo( AT_START, vx  == 0.0 );
+	ocp.subjectTo( AT_START, vy == 0.0 );
+	ocp.subjectTo( AT_START, vz  == 0.0 );
 	ocp.subjectTo( AT_START, roll == 0.0 );
 	ocp.subjectTo( AT_START, pitch == 0.0 );
-	ocp.subjectTo( AT_START, yaw == 0.0 );
+	ocp.subjectTo( AT_START, yaw == start_yaw );
 
 
 	ocp.subjectTo(f); // Dynamic Constraint
@@ -125,14 +136,17 @@ void mpcPlanner::optimize(int start_idx){
 	cout << "[MPC INFO]: " << "start optimizing..." << endl;
 
 	// Algorithm
-	OptimizationAlgorithm alg (ocp);
-	alg.set( HESSIAN_APPROXIMATION, GAUSS_NEWTON_WITH_BLOCK_BFGS )	;
-	alg.set( KKT_TOLERANCE, 1e-6 );
-	alg.solve();
+	OptimizationAlgorithm algorithm(ocp);
+	// algorithm.set( HESSIAN_APPROXIMATION, GAUSS_NEWTON_WITH_BLOCK_BFGS )	;
+	algorithm.set( KKT_TOLERANCE, 1e-6 );
+	algorithm.solve();
 
 	cout << "[MPC INFO]: " << "Complete!" << endl;
 
 
-	VariablesGrid xd;
-	alg.getDifferentialStates(xd); // get solutions
+	VariablesGrid xd, cd;
+	algorithm.getDifferentialStates(xd); // get solutions
+	algorithm.getControls(cd);
+	cout << xd << endl;
+	cout << cd << endl;
 }
