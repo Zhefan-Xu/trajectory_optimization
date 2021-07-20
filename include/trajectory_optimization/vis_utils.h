@@ -5,8 +5,7 @@
 #include <visualization_msgs/MarkerArray.h>
 #include <geometry_msgs/Point.h>
 
-visualization_msgs::MarkerArray wrapVisMsg(std::vector<pose> path){
-
+visualization_msgs::MarkerArray wrapVisMsg(std::vector<pose> path, double r=0, double g=0, double b=0){
 		visualization_msgs::MarkerArray msg;
 		std::vector<visualization_msgs::Marker> path_vis_array;
 		std::vector<geometry_msgs::Point> line_vis;
@@ -34,7 +33,7 @@ visualization_msgs::MarkerArray wrapVisMsg(std::vector<pose> path){
 				waypoint.pose.position.x = path[i].x;
 				waypoint.pose.position.y = path[i].y;
 				waypoint.pose.position.z = path[i].z;
-				// waypoint.lifetime = ros::Duration(0.5);
+				waypoint.lifetime = ros::Duration(0.5);
 				waypoint.scale.x = 0.1;
 				waypoint.scale.y = 0.1;
 				waypoint.scale.z = 0.1;
@@ -58,7 +57,7 @@ visualization_msgs::MarkerArray wrapVisMsg(std::vector<pose> path){
 				// direction.pose.orientation.z = quat[2];
 				// direction.pose.orientation.w = quat[3];
 				direction.pose.orientation = quat;
-				// direction.lifetime = ros::Duration(0.5);
+				direction.lifetime = ros::Duration(0.5);
 				direction.scale.x = 0.3;
 				direction.scale.y = 0.03;
 				direction.scale.z = 0.03;
@@ -79,7 +78,10 @@ visualization_msgs::MarkerArray wrapVisMsg(std::vector<pose> path){
 			line_marker.scale.y = 0.05;
 			line_marker.scale.z = 0.05;
 			line_marker.color.a = 1.0;
-			// line_marker.lifetime = ros::Duration(0.5);
+			line_marker.color.r = r;
+			line_marker.color.g = g;
+			line_marker.color.b = b;
+			line_marker.lifetime = ros::Duration(0.5);
 			path_vis_array.push_back(line_marker);
 			msg.markers = path_vis_array;
 	return msg;

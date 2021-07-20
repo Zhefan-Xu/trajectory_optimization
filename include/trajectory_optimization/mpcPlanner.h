@@ -33,8 +33,11 @@ public:
 	void loadControlLimits(double _T_max, double _roll_max, double _pitch_max, double _yawdot_max);
 	void loadParameters(double _mass, double _k_roll, double _tau_roll, double _k_pitch, double _tau_pitch);
 	void loadRefTrajectory(const std::vector<pose> &_ref_trajectory, double _delT);
-	VariablesGrid getReference(int start_idx, int horizon);
-	void optimize(int start_idx);
+	int findNearestPoseIndex(pose p);
+	int findNearestPoseIndex(const DVector &states); // states
+	VariablesGrid getReference(int start_idx);
+	std::vector<pose> getTrajectory(const VariablesGrid &xd);
+	std::vector<pose> optimize(const DVector &currentStates);
 };
 
 

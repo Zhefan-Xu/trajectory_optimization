@@ -467,6 +467,9 @@ pose polyTraj::getPose(double t){
 		double start_t = this->timed[i];
 		double end_t = this->timed[i+1];
 		if ((t >= start_t) and (t <= end_t)){
+			if (t == 0){
+				t += 0.01;
+			}
 			int coeff_start_index = i*num_each_coeff;
 			double x = 0; double y = 0; double z = 0; double yaw = 0;
 			for (int n=0; n<num_each_coeff; ++n){
@@ -482,9 +485,6 @@ pose polyTraj::getPose(double t){
 			}
 			yaw = atan2(dy, dx);
 
-			if (t == 0){
-				yaw = this->path[0].yaw;
-			}
 			p.x = x; p.y = y; p.z = z; p.yaw = yaw;
 		}
 	}

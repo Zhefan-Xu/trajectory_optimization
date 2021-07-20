@@ -11,7 +11,7 @@ int main(int argc, char** argv){
 	// read data and load data
 	std::string filename = "/home/zhefan/catkin_ws/src/trajectory_optimization/path/waypoint_maze_complete.txt";
 	std::vector<std::vector<pose>> paths = read_waypoint_file(filename);
-	std::vector<pose> path = paths[30];
+	std::vector<pose> path = paths[37];
 
 	// parameters
 	double res = 0.1; // map resolution
@@ -29,8 +29,8 @@ int main(int argc, char** argv){
 
 
 	// Visualization:
-	visualization_msgs::MarkerArray path_msg = wrapVisMsg(loadPath);
-	visualization_msgs::MarkerArray trajectory_msg = wrapVisMsg(trajectory);
+	visualization_msgs::MarkerArray path_msg = wrapVisMsg(loadPath, 0, 0, 0);
+	visualization_msgs::MarkerArray trajectory_msg = wrapVisMsg(trajectory, 0, 1, 0);
 
 	ros::Publisher path_vis_pub = nh.advertise<visualization_msgs::MarkerArray>("waypoint_path", 0);
 	ros::Publisher trajectory_vis_pub = nh.advertise<visualization_msgs::MarkerArray>("trajectory", 0);

@@ -37,11 +37,30 @@ void mpcPlanner::loadRefTrajectory(const std::vector<pose> &_ref_trajectory, dou
 	cout << "[MPC INFO]: " << "size of reference trajectory: " << this->ref_trajectory.size() << ", delT: " << this->delT << endl;
 }
 
+int mpcPlanner::findNearestPoseIndex(pose p){
+	double max_dist = 0;
+	int count_idx = 0; int max_idx = 0;
+	for (pose ref_p: this->ref_trajectory){
+		double dist = getDistance(p, ref_p);
+		if (dist > max_dist){
+			max_dist = dist;
+			max_idx = count_idx;
+		}
+		++count_idx; 
+	}
+	return max_idx;
+}
 
-VariablesGrid mpcPlanner::getReference(int start_idx, int horizon){ // need to specify the start index of the trajectory
+int mpcPlanner::findNearestPoseIndex(const DVector &states){
+	pose p;
+	p.x = states(0); p.y = states(1); p.z = states(2); p.yaw = states(8);
+	return this->findNearestPoseIndex(p);
+}
+
+VariablesGrid mpcPlanner::getReference(int start_idx){ // need to specify the start index of the trajectory
 	VariablesGrid r (4, 0);
 	double t = 0;
-	for (int i=0; i<horizon; ++i){
+	for (int i=0; i<this->horizon; ++i){
 		if (i > this->ref_trajectory.size()-1){
 			break;
 		}
@@ -58,7 +77,18 @@ VariablesGrid mpcPlanner::getReference(int start_idx, int horizon){ // need to s
 	return r;
 }
 
-void mpcPlanner::optimize(int start_idx){
+std::vector<pose> mpcPlanner::getTrajectory(const VariablesGrid &xd){
+	std::vector<pose> mpc_trajectory;
+	for (int i=0; i<this->horizon; ++i){
+		pose p;
+		DVector states = xd.getVector(i);
+		p.x = states(0); p.y = states(1); p.z = states(2); p.yaw = states(8);
+		mpc_trajectory.push_back(p);
+	}
+	return mpc_trajectory;
+}
+
+std::vector<pose> mpcPlanner::optimize(const DVector &currentStates){
 	DifferentialState x;
 	DifferentialState y;
 	DifferentialState z;
@@ -97,54 +127,35 @@ void mpcPlanner::optimize(int start_idx){
     Q.setIdentity(); Q(0,0) = 10.0; Q(1,1) = 10.0; Q(2,2) = 10.0;
 	
 	// get tracking trajectory (future N seconds)
-	VariablesGrid r = this->getReference(start_idx, this->horizon);
-	DVector start_pose_vec = r.getVector(0);
-	double start_x = start_pose_vec[0]; double start_y = start_pose_vec[1]; double start_z = start_pose_vec[2]; double start_yaw = start_pose_vec[3];
-
+	int start_idx = this->findNearestPoseIndex(currentStates);
+	VariablesGrid r = this->getReference(start_idx);
 
 	// setup OCP
 	OCP ocp1(r);
-	ocp = ocp1; 
+	this->ocp = ocp1; 
+	this->ocp.minimizeLSQ(Q, h, r); // Objective
 
-
-	ocp.minimizeLSQ(Q, h, r); // Objective
-
-	// Initial Condition Constraint:
-	ocp.subjectTo( AT_START, x  == start_x );
-	ocp.subjectTo( AT_START, y == start_y);
-	ocp.subjectTo( AT_START, z  == start_z);
-	ocp.subjectTo( AT_START, vx  == 0.0 );
-	ocp.subjectTo( AT_START, vy == 0.0 );
-	ocp.subjectTo( AT_START, vz  == 0.0 );
-	ocp.subjectTo( AT_START, roll == 0.0 );
-	ocp.subjectTo( AT_START, pitch == 0.0 );
-	ocp.subjectTo( AT_START, yaw == start_yaw );
-
-
-	ocp.subjectTo(f); // Dynamic Constraint
-
+	// Dynamic Constraint
+	this->ocp.subjectTo(f); 
 	// Control Constraints
-	ocp.subjectTo( 0 <= T <= this->T_max ); 
-	ocp.subjectTo( -this->roll_max <= roll_d <= this->roll_max);
-	ocp.subjectTo( -this->pitch_max <= pitch_d <= this->pitch_max);
-	ocp.subjectTo( -this->yawdot_max <= yawdot_d <= this->yawdot_max);
-
+	this->ocp.subjectTo( 0 <= T <= this->T_max ); 
+	this->ocp.subjectTo( -this->roll_max <= roll_d <= this->roll_max);
+	this->ocp.subjectTo( -this->pitch_max <= pitch_d <= this->pitch_max);
+	this->ocp.subjectTo( -this->yawdot_max <= yawdot_d <= this->yawdot_max);
 	cout << "[MPC INFO]: " << "start optimizing..." << endl;
 
 	// Algorithm
-	// OptimizationAlgorithm algorithm(ocp);
-	RealTimeAlgorithm algorithm(ocp, this->delT);
-
-	// algorithm.solve();
-	DVector _x (9); _x.setAll(0.0); _x(0) = start_x; _x(1) = start_y; _x(2) = start_z; _x(8) = start_yaw; 
-	algorithm.solve(0, _x);
-
+	RealTimeAlgorithm algorithm(this->ocp, this->delT);
+	algorithm.solve(0, currentStates);
 	cout << "[MPC INFO]: " << "Complete!" << endl;
 
-
+	// Get Solutions
 	VariablesGrid xd, cd;
 	algorithm.getDifferentialStates(xd); // get solutions
-	algorithm.getControls(cd);
-	cout << xd << endl;
-	cout << cd << endl;
+	// algorithm.getControls(cd);
+	// cout << xd << endl;
+	// cout << cd << endl;
+
+	std::vector<pose> mpc_trajectory = this->getTrajectory(xd);
+	return mpc_trajectory;
 }
