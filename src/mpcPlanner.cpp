@@ -38,17 +38,17 @@ void mpcPlanner::loadRefTrajectory(const std::vector<pose> &_ref_trajectory, dou
 }
 
 int mpcPlanner::findNearestPoseIndex(pose p){
-	double max_dist = 0;
-	int count_idx = 0; int max_idx = 0;
+	double min_dist = 1000000;
+	int count_idx = 0; int min_idx = 0;
 	for (pose ref_p: this->ref_trajectory){
 		double dist = getDistance(p, ref_p);
-		if (dist > max_dist){
-			max_dist = dist;
-			max_idx = count_idx;
+		if (dist < min_dist){
+			min_dist = dist;
+			min_idx = count_idx;
 		}
 		++count_idx; 
 	}
-	return max_idx;
+	return min_idx;
 }
 
 int mpcPlanner::findNearestPoseIndex(const DVector &states){
@@ -60,7 +60,7 @@ int mpcPlanner::findNearestPoseIndex(const DVector &states){
 VariablesGrid mpcPlanner::getReference(int start_idx){ // need to specify the start index of the trajectory
 	VariablesGrid r (4, 0);
 	double t = 0;
-	for (int i=0; i<this->horizon; ++i){
+	for (int i=start_idx; i<this->horizon; ++i){
 		if (i > this->ref_trajectory.size()-1){
 			break;
 		}
@@ -128,24 +128,26 @@ std::vector<pose> mpcPlanner::optimize(const DVector &currentStates){
 	
 	// get tracking trajectory (future N seconds)
 	int start_idx = this->findNearestPoseIndex(currentStates);
+	cout <<"[MPC INFO]: " << "start_idx: " << start_idx << endl;
 	VariablesGrid r = this->getReference(start_idx);
+	cout << &r << endl;
 
 	// setup OCP
-	OCP ocp1(r);
-	this->ocp = ocp1; 
-	this->ocp.minimizeLSQ(Q, h, r); // Objective
+	OCP ocp(r);
+	ocp.minimizeLSQ(Q, h, r); // Objective
 
 	// Dynamic Constraint
-	this->ocp.subjectTo(f); 
+	ocp.subjectTo(f); 
 	// Control Constraints
-	this->ocp.subjectTo( 0 <= T <= this->T_max ); 
-	this->ocp.subjectTo( -this->roll_max <= roll_d <= this->roll_max);
-	this->ocp.subjectTo( -this->pitch_max <= pitch_d <= this->pitch_max);
-	this->ocp.subjectTo( -this->yawdot_max <= yawdot_d <= this->yawdot_max);
-	cout << "[MPC INFO]: " << "start optimizing..." << endl;
+	ocp.subjectTo( 0 <= T <= this->T_max ); 
+	ocp.subjectTo( -this->roll_max <= roll_d <= this->roll_max);
+	ocp.subjectTo( -this->pitch_max <= pitch_d <= this->pitch_max);
+	ocp.subjectTo( -this->yawdot_max <= yawdot_d <= this->yawdot_max);
 
 	// Algorithm
-	RealTimeAlgorithm algorithm(this->ocp, this->delT);
+	RealTimeAlgorithm algorithm(ocp, this->delT);
+	cout << "[MPC INFO]: " << "Start optimizing..." << endl;
+
 	algorithm.solve(0, currentStates);
 	cout << "[MPC INFO]: " << "Complete!" << endl;
 

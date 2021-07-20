@@ -2,6 +2,7 @@
 #include <trajectory_optimization/readfile.h>
 #include <trajectory_optimization/mpcPlanner.h>
 #include <trajectory_optimization/staticPlanner.h>
+#include <trajectory_optimization/vis_utils.h>
 #include <chrono> 
 
 using namespace std::chrono;
@@ -29,7 +30,7 @@ int main(int argc, char** argv){
 	// solve trajectory:
 	std::vector<pose> trajectory = staticPlanner(nh, res, xsize, ysize, zsize, degree, velocityd, diff_degree, perturb, path, shortcut, delT, loadPath);
 
-
+	// MPC
 	int horizon = 20; // MPC horizon
 
 	double mass = 1.0; double k_roll = 1.0; double tau_roll = 1.0; double k_pitch = 1.0; double tau_pitch = 1.0; 
@@ -39,14 +40,42 @@ int main(int argc, char** argv){
 	mp.loadControlLimits(T_max, roll_max, pitch_max, yawdot_max);
 	mp.loadRefTrajectory(trajectory, delT);
 
+
+
+
+	// Visualization:
+	visualization_msgs::MarkerArray path_msg = wrapVisMsg(loadPath, 0, 0, 0);
+	visualization_msgs::MarkerArray trajectory_msg = wrapVisMsg(trajectory, 0, 1, 0);
+
+	ros::Publisher path_vis_pub = nh.advertise<visualization_msgs::MarkerArray>("waypoint_path", 0);
+	ros::Publisher trajectory_vis_pub = nh.advertise<visualization_msgs::MarkerArray>("trajectory", 0);
+	ros::Publisher mpc_trajectory_vis_pub = nh.advertise<nav_msgs::Path>("mpc_trajectory", 0);
+
+
+	ros::Rate loop_rate(2);
 	int start_index = 0;
-	auto start_time = high_resolution_clock::now();
 	DVector currentStates(9); currentStates.setAll(0.0);
-	currentStates(0) = trajectory[0].x; currentStates(1) = trajectory[0].y; currentStates(2) = trajectory[0].z; currentStates(8) = trajectory[0].yaw;  
-	std::vector<pose> mpc_trajectory = mp.optimize(currentStates);
-	auto end_time = high_resolution_clock::now();
-	auto duration_total = duration_cast<microseconds>(end_time - start_time);
-	cout << "Total: "<< duration_total.count()/1e6 << " seconds. " << endl;
+	std::vector<pose> mpc_trajectory;
+
+	while (ros::ok()){
+		auto start_time = high_resolution_clock::now();
+		
+		currentStates(0) = trajectory[start_index].x; currentStates(1) = trajectory[start_index].y; currentStates(2) = trajectory[start_index].z; currentStates(8) = trajectory[start_index].yaw;  
+		mpc_trajectory = mp.optimize(currentStates);
+
+		auto end_time = high_resolution_clock::now();
+		auto duration_total = duration_cast<microseconds>(end_time - start_time);
+		cout << "Total: "<< duration_total.count()/1e6 << " seconds. " << endl;
+		nav_msgs::Path mpc_trajectory_msg = wrapPathMsg(mpc_trajectory);
+		++start_index;
+
+
+		path_vis_pub.publish(path_msg);
+		trajectory_vis_pub.publish(trajectory_msg);
+		mpc_trajectory_vis_pub.publish(mpc_trajectory_msg);
+		loop_rate.sleep();
+	}
+
 
 
 	return 0;

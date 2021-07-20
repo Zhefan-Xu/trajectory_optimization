@@ -4,8 +4,9 @@
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <geometry_msgs/Point.h>
+#include <nav_msgs/Path.h>
 
-visualization_msgs::MarkerArray wrapVisMsg(std::vector<pose> path, double r=0, double g=0, double b=0){
+visualization_msgs::MarkerArray wrapVisMsg(const std::vector<pose> &path, double r=0, double g=0, double b=0){
 		visualization_msgs::MarkerArray msg;
 		std::vector<visualization_msgs::Marker> path_vis_array;
 		std::vector<geometry_msgs::Point> line_vis;
@@ -86,4 +87,21 @@ visualization_msgs::MarkerArray wrapVisMsg(std::vector<pose> path, double r=0, d
 			msg.markers = path_vis_array;
 	return msg;
 }
+
+nav_msgs::Path wrapPathMsg(const std::vector<pose> &path){
+	nav_msgs::Path msg;
+	std::vector<geometry_msgs::PoseStamped> poses;
+	for (int i=0; i<path.size(); ++i){
+		pose pt = path[i];
+		geometry_msgs::PoseStamped p;
+		p.pose.position.x = pt.x; p.pose.position.y = pt.y; p.pose.position.z = pt.z;
+		geometry_msgs::Quaternion quat = quaternion_from_rpy(0, 0, pt.yaw);
+		p.pose.orientation = quat;
+		poses.push_back(p);
+	}
+	msg.poses = poses;
+	msg.header.frame_id = "map";
+	return msg;
+}
+
 #endif
