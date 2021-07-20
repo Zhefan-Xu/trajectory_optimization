@@ -25,7 +25,8 @@ private:
 	std::vector<pose> ref_trajectory;
 	double delT;
 
-
+	RealTimeAlgorithm algorithm;
+	bool first_time;
 public:
 	mpcPlanner();
 	mpcPlanner(int _horizon);
@@ -36,7 +37,8 @@ public:
 	int findNearestPoseIndex(const DVector &states); // states
 	VariablesGrid getReference(int start_idx);
 	std::vector<pose> getTrajectory(const VariablesGrid &xd);
-	std::vector<pose> optimize(const DVector &currentStates);
+	RealTimeAlgorithm constructOptimizer(const DVector &currentStates);
+	void optimize(const DVector &currentStates, DVector &nextStates, std::vector<pose> &mpc_trajectory);
 };
 
 

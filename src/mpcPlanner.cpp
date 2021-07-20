@@ -8,6 +8,7 @@ mpcPlanner::mpcPlanner(){
 	this->T_max = 2.5; //kg
 	this->roll_max = PI_const/6; this->pitch_max = PI_const/6; this->yawdot_max = PI_const/6;
 	this->horizon = 20;
+	this->first_time = true;
 }
 
 mpcPlanner::mpcPlanner(int _horizon){
@@ -18,6 +19,7 @@ mpcPlanner::mpcPlanner(int _horizon){
 	this->T_max = 2.5; //kg
 	this->roll_max = PI_const/6; this->pitch_max = PI_const/6; this->yawdot_max = PI_const/6;
 	this->horizon = _horizon;
+	this->first_time = true;
 }
 
 void mpcPlanner::loadControlLimits(double _T_max, double _roll_max, double _pitch_max, double _yawdot_max){
@@ -59,8 +61,8 @@ int mpcPlanner::findNearestPoseIndex(const DVector &states){
 
 VariablesGrid mpcPlanner::getReference(int start_idx){ // need to specify the start index of the trajectory
 	VariablesGrid r (4, 0);
-	double t = 0;
-	for (int i=start_idx; i<this->horizon; ++i){
+	double t = 0; int count_horizon = 0;
+	for (int i=start_idx; i<start_idx+this->horizon; ++i){
 		if (i > this->ref_trajectory.size()-1){
 			break;
 		}
@@ -72,8 +74,17 @@ VariablesGrid mpcPlanner::getReference(int start_idx){ // need to specify the st
 		pose_i(3) = this->ref_trajectory[i].yaw;
 		r.addVector(pose_i, t);
 		t += this->delT;
+		++count_horizon;
 	}
-	cout << "[MPC INFO]: " << "reference data: \n" << r << endl;
+
+
+	while (count_horizon != this->horizon){
+		r.addVector(r.getLastVector(), t);
+		t += this->delT;
+		++count_horizon;
+	}
+
+	// cout << "[MPC INFO]: " << "reference data: \n" << r << endl;
 	return r;
 }
 
@@ -88,7 +99,7 @@ std::vector<pose> mpcPlanner::getTrajectory(const VariablesGrid &xd){
 	return mpc_trajectory;
 }
 
-std::vector<pose> mpcPlanner::optimize(const DVector &currentStates){
+RealTimeAlgorithm mpcPlanner::constructOptimizer(const DVector &currentStates){
 	DifferentialState x;
 	DifferentialState y;
 	DifferentialState z;
@@ -130,7 +141,6 @@ std::vector<pose> mpcPlanner::optimize(const DVector &currentStates){
 	int start_idx = this->findNearestPoseIndex(currentStates);
 	cout <<"[MPC INFO]: " << "start_idx: " << start_idx << endl;
 	VariablesGrid r = this->getReference(start_idx);
-	cout << &r << endl;
 
 	// setup OCP
 	OCP ocp(r);
@@ -146,8 +156,21 @@ std::vector<pose> mpcPlanner::optimize(const DVector &currentStates){
 
 	// Algorithm
 	RealTimeAlgorithm algorithm(ocp, this->delT);
-	cout << "[MPC INFO]: " << "Start optimizing..." << endl;
+	return algorithm;
+}
 
+void mpcPlanner::optimize(const DVector &currentStates, DVector &nextStates, std::vector<pose> &mpc_trajectory){
+	if (this->first_time){
+		algorithm = this->constructOptimizer(currentStates);
+		this->first_time = false;
+	}
+	else{
+		int start_idx = this->findNearestPoseIndex(currentStates);
+		VariablesGrid r = this->getReference(start_idx);
+		algorithm.setReference(r);
+	}
+	cout << "[MPC INFO]: " << "Start optimizing..." << endl;
+	cout << &algorithm << endl;
 	algorithm.solve(0, currentStates);
 	cout << "[MPC INFO]: " << "Complete!" << endl;
 
@@ -158,6 +181,6 @@ std::vector<pose> mpcPlanner::optimize(const DVector &currentStates){
 	// cout << xd << endl;
 	// cout << cd << endl;
 
-	std::vector<pose> mpc_trajectory = this->getTrajectory(xd);
-	return mpc_trajectory;
+	mpc_trajectory = this->getTrajectory(xd);
+	nextStates = xd.getVector(1);
 }

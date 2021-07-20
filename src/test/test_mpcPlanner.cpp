@@ -41,8 +41,6 @@ int main(int argc, char** argv){
 	mp.loadRefTrajectory(trajectory, delT);
 
 
-
-
 	// Visualization:
 	visualization_msgs::MarkerArray path_msg = wrapVisMsg(loadPath, 0, 0, 0);
 	visualization_msgs::MarkerArray trajectory_msg = wrapVisMsg(trajectory, 0, 1, 0);
@@ -52,16 +50,21 @@ int main(int argc, char** argv){
 	ros::Publisher mpc_trajectory_vis_pub = nh.advertise<nav_msgs::Path>("mpc_trajectory", 0);
 
 
-	ros::Rate loop_rate(2);
+	ros::Rate loop_rate(5);
 	int start_index = 0;
 	DVector currentStates(9); currentStates.setAll(0.0);
+	currentStates(0) = trajectory[0].x; currentStates(1) = trajectory[0].y; currentStates(2) = trajectory[0].z; currentStates(8) = trajectory[0].yaw;
+	DVector nextStates;
 	std::vector<pose> mpc_trajectory;
 
 	while (ros::ok()){
 		auto start_time = high_resolution_clock::now();
 		
-		currentStates(0) = trajectory[start_index].x; currentStates(1) = trajectory[start_index].y; currentStates(2) = trajectory[start_index].z; currentStates(8) = trajectory[start_index].yaw;  
-		mpc_trajectory = mp.optimize(currentStates);
+		mp.optimize(currentStates, nextStates, mpc_trajectory);
+		// cout << nextStates << endl;
+		currentStates(0) = nextStates(0); currentStates(1) = nextStates(1); currentStates(2) = nextStates(2);
+		currentStates(3) = nextStates(3); currentStates(4) = nextStates(4); currentStates(5) = nextStates(5); 
+		currentStates(6) = nextStates(6); currentStates(7) = nextStates(7); currentStates(8) = nextStates(8);  
 
 		auto end_time = high_resolution_clock::now();
 		auto duration_total = duration_cast<microseconds>(end_time - start_time);
@@ -69,14 +72,11 @@ int main(int argc, char** argv){
 		nav_msgs::Path mpc_trajectory_msg = wrapPathMsg(mpc_trajectory);
 		++start_index;
 
-
 		path_vis_pub.publish(path_msg);
 		trajectory_vis_pub.publish(trajectory_msg);
 		mpc_trajectory_vis_pub.publish(mpc_trajectory_msg);
 		loop_rate.sleep();
 	}
-
-
 
 	return 0;
 }
