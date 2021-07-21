@@ -14,7 +14,7 @@ int main(int argc, char** argv){
 	// read data and load data
 	std::string filename = "/home/zhefan/catkin_ws/src/trajectory_optimization/path/waypoint_maze_complete.txt";
 	std::vector<std::vector<pose>> paths = read_waypoint_file(filename);
-	std::vector<pose> path = paths[30];
+	std::vector<pose> path = paths[38];
 
 	// parameters
 	double res = 0.1; // map resolution
@@ -24,14 +24,14 @@ int main(int argc, char** argv){
 	int diff_degree = 4; // Minimum snap (4), minimum jerk (3)
 	double perturb = 1; // Regularization term and also make PSD -> PD
 	bool shortcut = true; // shortcut waypoints
-	double delT = 0.2; // resolution of the final trajectory
+	double delT = 0.1; // resolution of the final trajectory
 	std::vector<pose> loadPath;
 
 	// solve trajectory:
 	std::vector<pose> trajectory = staticPlanner(nh, res, xsize, ysize, zsize, degree, velocityd, diff_degree, perturb, path, shortcut, delT, loadPath);
 
 	// MPC
-	int horizon = 20; // MPC horizon
+	int horizon = 40; // MPC horizon
 
 	double mass = 1.0; double k_roll = 1.0; double tau_roll = 1.0; double k_pitch = 1.0; double tau_pitch = 1.0; 
 	double T_max = 3 * mass * 9.8; double roll_max = PI_const/6; double pitch_max = PI_const/6; double yawdot_max = PI_const/3;
@@ -50,7 +50,7 @@ int main(int argc, char** argv){
 	ros::Publisher mpc_trajectory_vis_pub = nh.advertise<nav_msgs::Path>("mpc_trajectory", 0);
 
 
-	ros::Rate loop_rate(5);
+	ros::Rate loop_rate(1/delT);
 	int start_index = 0;
 	DVector currentStates(9); currentStates.setAll(0.0);
 	currentStates(0) = trajectory[0].x; currentStates(1) = trajectory[0].y; currentStates(2) = trajectory[0].z; currentStates(8) = trajectory[0].yaw;
@@ -71,7 +71,7 @@ int main(int argc, char** argv){
 		cout << "Total: "<< duration_total.count()/1e6 << " seconds. " << endl;
 		nav_msgs::Path mpc_trajectory_msg = wrapPathMsg(mpc_trajectory);
 		++start_index;
-
+		break;
 		path_vis_pub.publish(path_msg);
 		trajectory_vis_pub.publish(trajectory_msg);
 		mpc_trajectory_vis_pub.publish(mpc_trajectory_msg);

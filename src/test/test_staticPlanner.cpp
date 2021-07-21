@@ -11,13 +11,13 @@ int main(int argc, char** argv){
 	// read data and load data
 	std::string filename = "/home/zhefan/catkin_ws/src/trajectory_optimization/path/waypoint_maze_complete.txt";
 	std::vector<std::vector<pose>> paths = read_waypoint_file(filename);
-	std::vector<pose> path = paths[37];
+	std::vector<pose> path = paths[38];
 
 	// parameters
 	double res = 0.1; // map resolution
 	double xsize = 0.2; double ysize = 0.2; double zsize = 0.1; // Robot collision box size
 	int degree = 7; // polynomial degree
-	double velocityd = 2; // desired average velocity
+	double velocityd = 1; // desired average velocity
 	int diff_degree = 4; // Minimum snap (4), minimum jerk (3)
 	double perturb = 1; // Regularization term and also make PSD -> PD
 	bool shortcut = true; // shortcut waypoints
