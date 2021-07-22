@@ -106,10 +106,11 @@ find_package(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES trajectory_optimization
-#  CATKIN_DEPENDS roscpp rospy std_msgs
-#  DEPENDS system_lib
+ INCLUDE_DIRS include "/usr/local/include/QuadProg++" "/home/zhefan/Packages/ACADOtoolkit" "/home/zhefan/Packages/ACADOtoolkit"
+ "/home/zhefan/Packages/ACADOtoolkit/acado" "/home/zhefan/Packages/ACADOtoolkit/acado/utils"
+ # LIBRARIES trajectory_optimization
+ # CATKIN_DEPENDS roscpp rospy std_msgs
+ # DEPENDS sys/tem_lib
 )
 
 ###########
@@ -124,7 +125,7 @@ include_directories(
   "/usr/local/include/QuadProg++"
   "/home/zhefan/Packages/ACADOtoolkit"
   "/home/zhefan/Packages/ACADOtoolkit/acado"
-  "/home/zhefan/Packages/ACADOtoolkit/utils"
+  "/home/zhefan/Packages/ACADOtoolkit/acado/utils"
 )
 
 ## Declare a C++ library
