@@ -3,12 +3,12 @@
 #include <trajectory_optimization/mpcPlanner.h>
 #include <trajectory_optimization/staticPlanner.h>
 #include <trajectory_optimization/vis_utils.h>
+#include <gazebo_msgs/SetModelState.h>
+#include <gazebo_msgs/ModelState.h>
 #include <chrono> 
 
-using namespace std::chrono;
-
 int main(int argc, char** argv){
-	ros::init(argc, argv, "test_mpcPlanner_node");
+	ros::init(argc, argv, "test_gazeboTrajectory_node");
 	ros::NodeHandle nh;
 
 	// read data and load data
@@ -34,7 +34,7 @@ int main(int argc, char** argv){
 	int horizon = 40; // MPC horizon
 
 	double mass = 1.0; double k_roll = 1.0; double tau_roll = 1.0; double k_pitch = 1.0; double tau_pitch = 1.0; 
-	double T_max = 3 * 9.8; double roll_max = PI_const/6; double pitch_max = PI_const/6; 
+	double T_max = 3 * 9.8; double roll_max = PI_const/6; double pitch_max = PI_const/6;
 	mpcPlanner mp (horizon);
 	mp.loadParameters(mass, k_roll, tau_roll, k_pitch, tau_pitch);
 	mp.loadControlLimits(T_max, roll_max, pitch_max);
@@ -48,7 +48,6 @@ int main(int argc, char** argv){
 	ros::Publisher trajectory_vis_pub = nh.advertise<visualization_msgs::MarkerArray>("trajectory", 0);
 	ros::Publisher mpc_trajectory_vis_pub = nh.advertise<nav_msgs::Path>("mpc_trajectory", 0);
 
-
 	ros::Rate loop_rate(1/delT);
 	int start_index = 0;
 	DVector currentStates(8); currentStates.setAll(0.0);
@@ -56,21 +55,33 @@ int main(int argc, char** argv){
 	DVector nextStates; VariablesGrid xd;
 	std::vector<pose> mpc_trajectory;
 
+	gazebo_msgs::SetModelState state_srv;
+	gazebo_msgs::ModelState state;
+	state.model_name = "drone";
+
+	ros::ServiceClient gazebo_setModel_client = nh.serviceClient<gazebo_msgs::SetModelState>("/gazebo/set_model_state");
+
+
 	while (ros::ok()){
-		auto start_time = high_resolution_clock::now();
-		mp.optimize(currentStates, nextStates, mpc_trajectory, xd);  
+		auto start_time = high_resolution_clock::now();	
+		mp.optimize(currentStates, nextStates, mpc_trajectory, xd);
 		currentStates = nextStates;
+		state.pose.position.x = mpc_trajectory[0].x; state.pose.position.y = mpc_trajectory[0].y; state.pose.position.z = mpc_trajectory[0].z;
+		geometry_msgs::Quaternion quat = quaternion_from_rpy(0, 0, mpc_trajectory[0].yaw);
+		state.pose.orientation = quat;
+		state_srv.request.model_state = state;
+		// state.twist.linear.x = nextStates(3); state.twist.linear.y = nextStates(4); state.twist.linear.z = nextStates(5);
+		gazebo_setModel_client.call(state_srv);
 
 		auto end_time = high_resolution_clock::now();
 		auto duration_total = duration_cast<microseconds>(end_time - start_time);
 		cout << "Total: "<< duration_total.count()/1e6 << " seconds. " << endl;
 		nav_msgs::Path mpc_trajectory_msg = wrapPathMsg(mpc_trajectory);
 		++start_index;
-		// break;
+
 		path_vis_pub.publish(path_msg);
 		trajectory_vis_pub.publish(trajectory_msg);
 		mpc_trajectory_vis_pub.publish(mpc_trajectory_msg);
 		loop_rate.sleep();
 	}
-	return 0;
 }

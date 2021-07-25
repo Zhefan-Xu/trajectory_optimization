@@ -36,6 +36,12 @@ double rpy_from_quaternion(geometry_msgs::Quaternion quat){
 	return yaw;
 }
 
+void rpy_from_quaternion(geometry_msgs::Quaternion quat, double &roll, double &pitch, double &yaw){
+	tf2::Quaternion tf_quat;
+	tf2::convert(quat, tf_quat);
+	tf2::Matrix3x3(tf_quat).getRPY(roll, pitch, yaw);
+}
+
 double getDistance(pose p1, pose p2){
 	return sqrt(pow((p1.x - p2.x),2) + pow((p1.y - p2.y),2) + pow((p1.z - p2.z),2));	
 
