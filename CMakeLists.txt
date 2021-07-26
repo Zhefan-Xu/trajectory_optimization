@@ -136,6 +136,7 @@ add_library(polyTrajGen src/polyTrajGen.cpp)
 add_library(mapModuleOctomap src/mapModuleOctomap.cpp)
 add_library(timeOptimizer src/timeOptimizer.cpp)
 add_library(mpcPlanner src/mpcPlanner.cpp)
+add_library(mavrosTest src/mavrosTest.cpp)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -155,6 +156,7 @@ add_executable(test_staticPlanner src/test/test_staticPlanner.cpp)
 add_executable(test_acado src/test/test_acado.cpp)
 add_executable(test_mpcPlanner src/test/test_mpcPlanner.cpp)
 add_executable(test_gazeboTrajectory src/test/test_gazeboTrajectory.cpp)
+add_executable(test_mavros_node src/test/test_mavros_node.cpp)
 # add_executable(test_eigen src/test_eigen.cpp)
 
 ## Rename C++ executable without prefix
@@ -185,6 +187,7 @@ target_link_libraries(test_acado ${catkin_LIBRARIES} "/home/zhefan/Packages/ACAD
 target_link_libraries(mpcPlanner "/home/zhefan/Packages/ACADOtoolkit/build/lib/libacado_toolkit_s.so")
 target_link_libraries(test_mpcPlanner ${catkin_LIBRARIES} mpcPlanner polyTrajGen mapModuleOctomap)
 target_link_libraries(test_gazeboTrajectory ${catkin_LIBRARIES} mpcPlanner polyTrajGen mapModuleOctomap)
+target_link_libraries(test_mavros_node ${catkin_LIBRARIES} mavrosTest)
 
 # target_link_libraries(test_eigen ${catkin_LIBRARIES})
 
