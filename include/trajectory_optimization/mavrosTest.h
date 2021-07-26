@@ -10,7 +10,8 @@
 #include <nav_msgs/Odometry.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <trajectory_optimization/readfile.h>
-
+#include <thread>
+#include <mutex>
 
 
 class mavrosTest{
@@ -32,13 +33,19 @@ private:
 	std::vector<pose> path;
 	mavros_msgs::PositionTarget goal;
 
+	std::unique_ptr<std::mutex> goal_mutex_;
+
+
 
 public:
+	std::thread worker_;
+
 	mavrosTest(const ros::NodeHandle &_nh);
 	void odom_cb(const nav_msgs::OdometryConstPtr& odom);
 	void state_cb(const mavros_msgs::State::ConstPtr& mavros_state);
 	void loadPath(std::string filename, int idx);
 	void setInitialPosition();
+	void publishGoal();
 };
 
 

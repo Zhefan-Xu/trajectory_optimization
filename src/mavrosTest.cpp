@@ -14,6 +14,7 @@ mavrosTest::mavrosTest(const ros::NodeHandle &_nh):nh(_nh){
     arming_client = nh.serviceClient<mavros_msgs::CommandBool>("/mavros/cmd/arming");
     set_mode_client = nh.serviceClient<mavros_msgs::SetMode>("/mavros/set_mode");
 
+    worker_ = std::thread(&mavrosTest::publishGoal, this);
 
 }
 
@@ -48,4 +49,47 @@ void mavrosTest::setInitialPosition(){
 	modelState.pose.orientation = quat; 
 	state_srv.request.model_state = modelState;
 	gazebo_setModel_client.call(state_srv);
+}
+
+
+void mavrosTest::publishGoal(){
+	ros::Rate rate(10.0);
+	for(int i = 100; ros::ok() && i > 0; --i){
+        goal.header.stamp = ros::Time::now();
+        goal_pub.publish(goal);
+        ros::spinOnce();
+        rate.sleep();
+    }
+
+	ros::Time last_request = ros::Time::now();
+	mavros_msgs::SetMode offb_set_mode;
+    offb_set_mode.request.custom_mode = "OFFBOARD";
+
+    mavros_msgs::CommandBool arm_cmd;
+    arm_cmd.request.value = true;
+	while (ros::ok()){	
+		if( current_state.mode != "OFFBOARD" &&
+            (ros::Time::now() - last_request > ros::Duration(5.0))){
+            if( set_mode_client.call(offb_set_mode) &&
+                offb_set_mode.response.mode_sent){
+                ROS_INFO("Offboard enabled");
+            }
+            last_request = ros::Time::now();
+        } else {
+            if( !current_state.armed &&
+                (ros::Time::now() - last_request > ros::Duration(5.0))){
+                if( arming_client.call(arm_cmd) &&
+                    arm_cmd.response.success){
+                    ROS_INFO("Vehicle armed");
+                }
+                last_request = ros::Time::now();
+            }
+        }
+        std::lock_guard<std::mutex> goal_guard(*(goal_mutex_));
+
+		goal.header.stamp = ros::Time::now();
+		goal_pub.publish(goal);
+		ros::spinOnce();
+		rate.sleep();
+	}
 }
