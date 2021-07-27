@@ -1,8 +1,9 @@
 #include <trajectory_optimization/mavrosTest.h>
 
-mavrosTest::mavrosTest(const ros::NodeHandle &_nh):nh(_nh){
+mavrosTest::mavrosTest(const ros::NodeHandle &_nh, double _delT=0.1):nh(_nh){
 	this->odom_received = false;
 	this->state_received = false;
+	this->delT = _delT;
 	odom_sub = nh.subscribe("/mavros/local_position/odom", 10, &mavrosTest::odom_cb, this);
 	state_sub = nh.subscribe<mavros_msgs::State>("/mavros/state", 10, &mavrosTest::state_cb, this);
 
@@ -14,7 +15,7 @@ mavrosTest::mavrosTest(const ros::NodeHandle &_nh):nh(_nh){
     arming_client = nh.serviceClient<mavros_msgs::CommandBool>("/mavros/cmd/arming");
     set_mode_client = nh.serviceClient<mavros_msgs::SetMode>("/mavros/set_mode");
 
-    worker_ = std::thread(&mavrosTest::publishGoal, this);
+    
 
 }
 
@@ -51,9 +52,22 @@ void mavrosTest::setInitialPosition(){
 	gazebo_setModel_client.call(state_srv);
 }
 
+void mavrosTest::run(){
+	worker_ = std::thread(&mavrosTest::publishGoal, this);
+
+	// takeoff at the first given point attitude:
+	goal.position.x = this->path[0].x; goal.position.y = this->path[0].y; goal.position.z = this->path[0].z;
+	goal.yaw = this->path[0].yaw; goal.coordinate_frame = 1;
+
+	ros::Rate rate(1/this->delT);
+	while (ros::ok()){
+		rate.sleep();
+	}
+}
+
 
 void mavrosTest::publishGoal(){
-	ros::Rate rate(10.0);
+	ros::Rate rate(1/this->delT);
 	for(int i = 100; ros::ok() && i > 0; --i){
         goal.header.stamp = ros::Time::now();
         goal_pub.publish(goal);
@@ -85,7 +99,6 @@ void mavrosTest::publishGoal(){
                 last_request = ros::Time::now();
             }
         }
-        std::lock_guard<std::mutex> goal_guard(*(goal_mutex_));
 
 		goal.header.stamp = ros::Time::now();
 		goal_pub.publish(goal);

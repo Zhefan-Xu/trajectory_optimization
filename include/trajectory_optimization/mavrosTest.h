@@ -10,6 +10,7 @@
 #include <nav_msgs/Odometry.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <trajectory_optimization/readfile.h>
+#include <trajectory_optimization/mpcPlanner.h>
 #include <thread>
 #include <mutex>
 
@@ -33,18 +34,21 @@ private:
 	std::vector<pose> path;
 	mavros_msgs::PositionTarget goal;
 
-	std::unique_ptr<std::mutex> goal_mutex_;
 
+
+	double delT;
+	mpcPlanner mp;
 
 
 public:
 	std::thread worker_;
 
-	mavrosTest(const ros::NodeHandle &_nh);
+	mavrosTest(const ros::NodeHandle &_nh, double _delT);
 	void odom_cb(const nav_msgs::OdometryConstPtr& odom);
 	void state_cb(const mavros_msgs::State::ConstPtr& mavros_state);
 	void loadPath(std::string filename, int idx);
 	void setInitialPosition();
+	void run();
 	void publishGoal();
 };
 
