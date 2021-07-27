@@ -7,7 +7,10 @@ mavrosTest::mavrosTest(const ros::NodeHandle &_nh, double _delT=0.1):nh(_nh){
 	odom_sub = nh.subscribe("/mavros/local_position/odom", 10, &mavrosTest::odom_cb, this);
 	state_sub = nh.subscribe<mavros_msgs::State>("/mavros/state", 10, &mavrosTest::state_cb, this);
 
-	goal_pub = nh.advertise<mavros_msgs::PositionTarget>("mavros/setpoint_raw/local", 10);
+	goal_pub = nh.advertise<mavros_msgs::PositionTarget>("/mavros/setpoint_raw/local", 10);
+	path_vis_pub = nh.advertise<visualization_msgs::MarkerArray>("/waypoint_path", 0);
+    trajectory_vis_pub = nh.advertise<visualization_msgs::MarkerArray>("/trajectory", 0);
+    mpc_trajectory_vis_pub = nh.advertise<nav_msgs::Path>("/mpc_trajectory", 0);
     
     // goal_pub = nh.advertise<geometry_msgs::PoseStamped>("/cerlab_uav/goal", 10);
 
@@ -53,16 +56,65 @@ void mavrosTest::setInitialPosition(){
 }
 
 void mavrosTest::run(){
-	worker_ = std::thread(&mavrosTest::publishGoal, this);
+	goal_worker_ = std::thread(&mavrosTest::publishGoal, this);
+	vis_worker_ = std::thread(&mavrosTest::publishVisMsg, this);
 
 	// takeoff at the first given point attitude:
+	this->takeoff();
+
+	// static planner:
+	// parameters
+	double res = 0.1; // map resolution
+	double xsize = 0.2; double ysize = 0.2; double zsize = 0.1; // Robot collision box size
+	int degree = 7; // polynomial degree
+	double velocityd = 1; // desired average velocity
+	int diff_degree = 4; // Minimum snap (4), minimum jerk (3)
+	double perturb = 1; // Regularization term and also make PSD -> PD
+	bool shortcut = true; // shortcut waypoints
+	std::vector<pose> loadPath;
+
+	// solve trajectory:
+	std::vector<pose> trajectory = staticPlanner(nh, res, xsize, ysize, zsize, degree, velocityd, diff_degree, perturb, path, shortcut, delT, loadPath);
+	path_msg = wrapVisMsg(loadPath, 0, 0, 0);
+	trajectory_msg = wrapVisMsg(trajectory, 0, 1, 0);
+
+	// MPC
+	int horizon = 40; // MPC horizon
+
+	double mass = 1.0; double k_roll = 1.0; double tau_roll = 1.0; double k_pitch = 1.0; double tau_pitch = 1.0; 
+	double T_max = 3 * 9.8; double roll_max = PI_const/6; double pitch_max = PI_const/6;
+	mpcPlanner mp (horizon);
+	mp.loadParameters(mass, k_roll, tau_roll, k_pitch, tau_pitch);
+	mp.loadControlLimits(T_max, roll_max, pitch_max);
+	mp.loadRefTrajectory(trajectory, this->delT);
+
+	DVector currentStates = this->getCurrentState();
+	DVector nextStates;
+	std::vector<pose> mpc_trajectory;
+	VariablesGrid xd;
+
+
+	ros::Rate rate(1/this->delT);
+	while (ros::ok()){
+		currentStates = this->getCurrentState();
+		mp.optimize(currentStates, nextStates, mpc_trajectory, xd);
+		this->modifyMPCGoal(mpc_trajectory, xd);
+		mpc_trajectory_msg = wrapPathMsg(mpc_trajectory);
+		rate.sleep();
+	}
+}
+
+void mavrosTest::takeoff(){
+	bool takeoff = false;
 	goal.position.x = this->path[0].x; goal.position.y = this->path[0].y; goal.position.z = this->path[0].z;
 	goal.yaw = this->path[0].yaw; goal.coordinate_frame = 1;
 
 	ros::Rate rate(1/this->delT);
-	while (ros::ok()){
+	while (takeoff == false){
+		takeoff = this->isReach();
 		rate.sleep();
 	}
+	cout << "[mavros test INFO]: " << "takeoff success!" << endl;
 }
 
 
@@ -99,10 +151,60 @@ void mavrosTest::publishGoal(){
                 last_request = ros::Time::now();
             }
         }
-
 		goal.header.stamp = ros::Time::now();
 		goal_pub.publish(goal);
 		ros::spinOnce();
 		rate.sleep();
 	}
+}
+
+void mavrosTest::publishVisMsg(){
+	ros::Rate rate(2);
+	while (ros::ok()){
+		path_vis_pub.publish(path_msg);
+        trajectory_vis_pub.publish(trajectory_msg);
+        mpc_trajectory_vis_pub.publish(mpc_trajectory_msg);
+        rate.sleep();
+	}
+}
+
+bool mavrosTest::isReach(){
+	double dx = std::abs(this->current_odom.pose.pose.position.x - this->goal.position.x);
+	double dy = std::abs(this->current_odom.pose.pose.position.y - this->goal.position.y);
+	double dz = std::abs(this->current_odom.pose.pose.position.z - this->goal.position.z);
+	double eps = 0.1;
+	if (dx < eps and dy < eps and dz < eps){
+		return true;
+	}
+	else{
+		return false;
+	}
+}
+
+DVector mavrosTest::getCurrentState(){
+	// TODO implement this
+	// convert odom to states
+	DVector currentStates(8); currentStates.setAll(0.0);
+
+	// position
+	currentStates(0) = this->current_odom.pose.pose.position.x; currentStates(1) = this->current_odom.pose.pose.position.y; currentStates(2) = this->current_odom.pose.pose.position.z; 
+
+	// velocity:
+	// TODO: coordinate transform
+
+	// orientation:
+	double roll; double pitch; double yaw;
+	rpy_from_quaternion(this->current_odom.pose.pose.orientation, roll, pitch, yaw);
+	currentStates(6) = roll; currentStates(7) = pitch;
+	return currentStates;
+}
+
+void mavrosTest::modifyMPCGoal(const std::vector<pose> &mpc_trajectory, const VariablesGrid &xd){
+	int forward_idx = 1;
+	double yaw = mpc_trajectory[forward_idx].yaw;
+	DVector goalStates = xd.getVector(forward_idx);
+	goal.position.x = goalStates(0); goal.position.y = goalStates(1); goal.position.z = goalStates(2);
+	goal.velocity.x = goalStates(3); goal.velocity.y = goalStates(4); goal.velocity.z = goalStates(5);
+	cout << goalStates << endl;
+	goal.yaw = yaw; 
 }

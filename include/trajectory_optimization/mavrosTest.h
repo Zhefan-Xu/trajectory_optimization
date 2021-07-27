@@ -11,6 +11,8 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <trajectory_optimization/readfile.h>
 #include <trajectory_optimization/mpcPlanner.h>
+#include <trajectory_optimization/staticPlanner.h>
+#include <trajectory_optimization/vis_utils.h>
 #include <thread>
 #include <mutex>
 
@@ -25,6 +27,9 @@ private:
 	ros::Subscriber state_sub;
 
 	ros::Publisher goal_pub;
+	ros::Publisher path_vis_pub;
+	ros::Publisher trajectory_vis_pub;
+	ros::Publisher mpc_trajectory_vis_pub;
 
 	ros::ServiceClient gazebo_setModel_client;
 	ros::ServiceClient arming_client;
@@ -33,15 +38,17 @@ private:
 	bool odom_received, state_received;
 	std::vector<pose> path;
 	mavros_msgs::PositionTarget goal;
-
+	visualization_msgs::MarkerArray path_msg;
+	visualization_msgs::MarkerArray trajectory_msg;
+	nav_msgs::Path mpc_trajectory_msg;
 
 
 	double delT;
-	mpcPlanner mp;
 
 
 public:
-	std::thread worker_;
+	std::thread goal_worker_;
+	std::thread vis_worker_;
 
 	mavrosTest(const ros::NodeHandle &_nh, double _delT);
 	void odom_cb(const nav_msgs::OdometryConstPtr& odom);
@@ -49,7 +56,12 @@ public:
 	void loadPath(std::string filename, int idx);
 	void setInitialPosition();
 	void run();
+	void takeoff();
 	void publishGoal();
+	void publishVisMsg();
+	bool isReach();
+	DVector getCurrentState();
+	void modifyMPCGoal(const std::vector<pose> &mpc_trajectory, const VariablesGrid &xd);
 };
 
 
