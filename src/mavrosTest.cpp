@@ -96,8 +96,12 @@ void mavrosTest::run(){
 
 	ros::Rate rate(1/this->delT);
 	while (ros::ok()){
-		currentStates = this->getCurrentState();
+		// currentStates = this->getCurrentState();
 		mp.optimize(currentStates, nextStates, mpc_trajectory, xd);
+		currentStates = nextStates;
+		// cout << currentStates << endl;
+		// cout << this->getCurrentState() << endl;
+
 		this->modifyMPCGoal(mpc_trajectory, xd);
 		mpc_trajectory_msg = wrapPathMsg(mpc_trajectory);
 		rate.sleep();
@@ -107,7 +111,7 @@ void mavrosTest::run(){
 void mavrosTest::takeoff(){
 	bool takeoff = false;
 	goal.position.x = this->path[0].x; goal.position.y = this->path[0].y; goal.position.z = this->path[0].z;
-	goal.yaw = this->path[0].yaw; goal.coordinate_frame = 1;
+	goal.yaw = this->path[0].yaw; goal.coordinate_frame = 1; 
 
 	ros::Rate rate(1/this->delT);
 	while (takeoff == false){
@@ -206,6 +210,7 @@ void mavrosTest::modifyMPCGoal(const std::vector<pose> &mpc_trajectory, const Va
 	DVector goalStates = xd.getVector(forward_idx);
 	goal.position.x = goalStates(0); goal.position.y = goalStates(1); goal.position.z = goalStates(2);
 	goal.velocity.x = goalStates(3); goal.velocity.y = goalStates(4); goal.velocity.z = goalStates(5);
-	cout << goalStates << endl;
-	goal.yaw = yaw; 
+	// cout << goalStates << endl;
+	goal.yaw = yaw; // goal.type_mask = 8 + 16 + 32 + 64 + 128 + 256 + 2048;
+	goal.type_mask =  64 + 128 + 256 + 2048;
 }
