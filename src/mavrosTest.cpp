@@ -190,7 +190,8 @@ DVector mavrosTest::getCurrentState(){
 	currentStates(0) = this->current_odom.pose.pose.position.x; currentStates(1) = this->current_odom.pose.pose.position.y; currentStates(2) = this->current_odom.pose.pose.position.z; 
 
 	// velocity:
-	// TODO: coordinate transform
+	// TODO: coordinate transform 
+	// listen to tf and apply the transform
 
 	// orientation:
 	double roll; double pitch; double yaw;
