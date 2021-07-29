@@ -4,7 +4,7 @@ mavrosTest::mavrosTest(const ros::NodeHandle &_nh, double _delT=0.1):nh(_nh){
 	this->odom_received = false;
 	this->state_received = false;
 	this->delT = _delT;
-	odom_sub = nh.subscribe("/mavros/local_position/odom", 10, &mavrosTest::odom_cb, this);
+	odom_sub = nh.subscribe<nav_msgs::Odometry>("/mavros/local_position/odom", 10, &mavrosTest::odom_cb, this);
 	state_sub = nh.subscribe<mavros_msgs::State>("/mavros/state", 10, &mavrosTest::state_cb, this);
 
 	goal_pub = nh.advertise<mavros_msgs::PositionTarget>("/mavros/setpoint_raw/local", 10);
