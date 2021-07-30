@@ -27,6 +27,8 @@ private:
 
 	RealTimeAlgorithm algorithm;
 	bool first_time;
+
+
 public:
 	mpcPlanner();
 	mpcPlanner(int _horizon);
@@ -39,6 +41,7 @@ public:
 	std::vector<pose> getTrajectory(const VariablesGrid &xd, int start_idx);
 	RealTimeAlgorithm constructOptimizer(const DVector &currentStates);
 	void optimize(const DVector &currentStates, DVector &nextStates, std::vector<pose> &mpc_trajectory, VariablesGrid &xd);
+	void optimize(const DVector &currentStates, const std::vector<obstacle> &obstacles, DVector &nextStates, std::vector<pose> &mpc_trajectory, VariablesGrid &xd);
 };
 
 

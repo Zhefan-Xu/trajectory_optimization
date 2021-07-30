@@ -159,6 +159,7 @@ add_executable(test_mpcPlanner src/test/test_mpcPlanner.cpp)
 add_executable(test_gazeboTrajectory src/test/test_gazeboTrajectory.cpp)
 add_executable(test_mavros_node src/test/test_mavros_node.cpp)
 add_executable(test_detector src/test/test_detector.cpp)
+add_executable(test_dynamicPlanner src/test/test_dynamicPlanner.cpp)
 # add_executable(test_eigen src/test_eigen.cpp)
 
 ## Rename C++ executable without prefix
@@ -192,6 +193,7 @@ target_link_libraries(test_mpcPlanner ${catkin_LIBRARIES} mpcPlanner polyTrajGen
 target_link_libraries(test_gazeboTrajectory ${catkin_LIBRARIES} mpcPlanner polyTrajGen mapModuleOctomap)
 target_link_libraries(test_mavros_node ${catkin_LIBRARIES} mavrosTest)
 target_link_libraries(test_detector ${catkin_LIBRARIES} fakeDetector)
+target_link_libraries(test_dynamicPlanner ${catkin_LIBRARIES} mpcPlanner)
 
 # target_link_libraries(test_eigen ${catkin_LIBRARIES})
 

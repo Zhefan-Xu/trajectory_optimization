@@ -86,7 +86,7 @@ VariablesGrid mpcPlanner::getReference(int start_idx){ // need to specify the st
 		++count_horizon;
 	}
 
-	// cout << "[MPC INFO]: " << "reference data: \n" << r << endl;
+	cout << "[MPC INFO]: " << "reference data: \n" << r << endl;
 	return r;
 }
 
@@ -124,6 +124,8 @@ std::vector<pose> mpcPlanner::getTrajectory(const VariablesGrid &xd, int start_i
 	return mpc_trajectory;
 }
 
+
+
 RealTimeAlgorithm mpcPlanner::constructOptimizer(const DVector &currentStates){
 	DifferentialState x;
 	DifferentialState y;
@@ -160,8 +162,8 @@ RealTimeAlgorithm mpcPlanner::constructOptimizer(const DVector &currentStates){
     Q.setIdentity(); Q(0,0) = 10.0; Q(1,1) = 10.0; Q(2,2) = 10.0; 
 	
 	// get tracking trajectory (future N seconds)
-	// int start_idx = this->findNearestPoseIndex(currentStates);
-	int start_idx = 0;
+	int start_idx = this->findNearestPoseIndex(currentStates);
+	// int start_idx = 0;
 
 	cout <<"[MPC INFO]: " << "start_idx: " << start_idx << endl;
 	VariablesGrid r = this->getReference(start_idx);
@@ -180,8 +182,8 @@ RealTimeAlgorithm mpcPlanner::constructOptimizer(const DVector &currentStates){
 	ocp.subjectTo( -this->pitch_max <= pitch <= this->pitch_max);
 
 	// Algorithm
-	RealTimeAlgorithm algorithm(ocp, this->delT);
-	return algorithm;
+	RealTimeAlgorithm RTalgorithm(ocp, this->delT);
+	return RTalgorithm;
 }
 
 void mpcPlanner::optimize(const DVector &currentStates, DVector &nextStates, std::vector<pose> &mpc_trajectory, VariablesGrid &xd){
@@ -202,17 +204,84 @@ void mpcPlanner::optimize(const DVector &currentStates, DVector &nextStates, std
 		VariablesGrid r = this->getReference(start_idx);
 		algorithm.setReference(r);
 	}
+
 	cout << "[MPC INFO]: " << "Start optimizing..." << endl;
 	algorithm.solve(0, currentStates);
 	cout << "[MPC INFO]: " << "Complete!" << endl;
 
 	// Get Solutions
 	// VariablesGrid xd, cd;
+	// VariablesGrid cd;
 	algorithm.getDifferentialStates(xd); // get solutions
 	// algorithm.getControls(cd);
 	// cout << xd << endl;
 	// cout << cd << endl;
 
+	mpc_trajectory = this->getTrajectory(xd, start_idx);
+	nextStates = xd.getVector(1);
+}
+
+void mpcPlanner::optimize(const DVector &currentStates, const std::vector<obstacle> &obstacles, DVector &nextStates, std::vector<pose> &mpc_trajectory, VariablesGrid &xd){
+	DifferentialState x;
+	DifferentialState y;
+	DifferentialState z;
+	DifferentialState vx;
+	DifferentialState vy;
+	DifferentialState vz;
+	DifferentialState roll;
+	DifferentialState pitch;
+	double yaw = 0;
+
+	Control T;
+	Control roll_d;
+	Control pitch_d;
+
+	// MODEL Definition
+	DifferentialEquation f;
+	f << dot(x) == vx;
+	f << dot(y) == vy;
+	f << dot(z) == vz;
+	f << dot(vx) == T*cos(roll)*sin(pitch)*cos(yaw) + T*sin(roll)*sin(yaw); 
+	f << dot(vy) == T*cos(roll)*sin(pitch)*sin(yaw) - T*sin(roll)*cos(yaw);
+	f << dot(vz) == T*cos(roll)*cos(pitch) - this->g;
+	f << dot(roll) == (1.0/this->tau_roll) * (this->k_roll * roll_d - roll);
+	f << dot(pitch) == (1.0/this->tau_pitch) * (this->k_pitch * pitch_d - pitch);
+
+	// Least Square Function
+	Function h;
+	h << x;
+	h << y;
+	h << z;
+
+	DMatrix Q(3,3);
+    Q.setIdentity(); Q(0,0) = 10.0; Q(1,1) = 10.0; Q(2,2) = 10.0; 
+	
+	// get tracking trajectory (future N seconds)
+	int start_idx = this->findNearestPoseIndex(currentStates);
+	// int start_idx = 0;
+
+	cout <<"[MPC INFO]: " << "start_idx: " << start_idx << endl;
+	VariablesGrid r = this->getReference(start_idx);
+
+	// setup OCP
+	OCP ocp(r);
+	ocp.minimizeLSQ(Q, h, r); // Objective
+
+	// Dynamic Constraint
+	ocp.subjectTo(f); 
+	// Control Constraints
+	ocp.subjectTo( 0 <= T <= this->T_max ); 
+	ocp.subjectTo( -this->roll_max <= roll_d <= this->roll_max);
+	ocp.subjectTo( -this->pitch_max <= pitch_d <= this->pitch_max);
+	ocp.subjectTo( -this->roll_max <= roll <= this->roll_max);
+	ocp.subjectTo( -this->pitch_max <= pitch <= this->pitch_max);
+
+	// Algorithm
+	RealTimeAlgorithm RTalgorithm(ocp, this->delT);
+	cout << "[MPC INFO]: " << "Start optimizing..." << endl;
+	RTalgorithm.solve(0, currentStates);
+	cout << "[MPC INFO]: " << "Complete!" << endl;
+	algorithm.getDifferentialStates(xd);
 	mpc_trajectory = this->getTrajectory(xd, start_idx);
 	nextStates = xd.getVector(1);
 }
