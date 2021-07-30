@@ -16,6 +16,14 @@ struct pose{
 	double yaw;
 };
 
+struct obstacle{
+	double x, y, z;
+	double xsize, ysize, zsize;
+	double vx, vy, vz;
+	double varX, varY, varZ;
+};
+
+
 geometry_msgs::Quaternion quaternion_from_rpy(double roll, double pitch, double yaw)
 {
 	if (yaw > PI_const){

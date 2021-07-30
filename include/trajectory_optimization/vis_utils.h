@@ -104,4 +104,38 @@ nav_msgs::Path wrapPathMsg(const std::vector<pose> &path){
 	return msg;
 }
 
+visualization_msgs::MarkerArray wrapObstacleMsg(const std::vector<obstacle> &obstacles){
+	visualization_msgs::MarkerArray msg;
+	std::vector<visualization_msgs::Marker> markers;
+	int i = 0;
+	for (obstacle ob: obstacles){
+		visualization_msgs::Marker m;
+		m.header.frame_id = "map";
+		m.header.stamp = ros::Time();
+		m.ns = "obstacles";
+		m.id = 99999 + i; ++i;
+		m.type = visualization_msgs::Marker::SPHERE;
+		m.action = visualization_msgs::Marker::ADD;
+		m.pose.position.x = ob.x;
+		m.pose.position.y = ob.y;
+		m.pose.position.z = ob.z;
+		m.pose.orientation.x = 0;
+		m.pose.orientation.y = 0;
+		m.pose.orientation.z = 0;
+		m.pose.orientation.w = 1;
+		m.scale.x = ob.xsize;
+		m.scale.y = ob.ysize;
+		m.scale.z = ob.zsize;
+		m.color.a = 1.0;
+		m.color.r = 1.0;
+		m.color.g = 0.0;
+		m.color.b = 0.0;
+		markers.push_back(m);
+	}
+	// cout << markers.size() << endl;
+	msg.markers = markers;
+
+	return msg;
+}
+
 #endif

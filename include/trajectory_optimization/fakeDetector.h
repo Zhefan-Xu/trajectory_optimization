@@ -3,15 +3,10 @@
 #include <ros/ros.h>
 #include <iostream>
 #include <gazebo_msgs/GetModelState.h>
+#include <trajectory_optimization/utils.h>
 
 using std::cout; using std::endl;
 
-struct obstacle{
-	double x, y, z;
-	double xsize, ysize, zsize;
-	double vx, vy, vz;
-	double varX, varY, varZ;
-};
 
 
 
