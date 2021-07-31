@@ -12,6 +12,7 @@
 #include <trajectory_optimization/readfile.h>
 #include <trajectory_optimization/mpcPlanner.h>
 #include <trajectory_optimization/staticPlanner.h>
+#include <trajectory_optimization/dynamicPlanner.h>
 #include <trajectory_optimization/vis_utils.h>
 #include <thread>
 #include <mutex>

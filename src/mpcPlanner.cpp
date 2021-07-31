@@ -198,13 +198,6 @@ void mpcPlanner::optimize(const DVector &currentStates, DVector &nextStates, std
 	}
 	else{
 		start_idx = this->findNearestPoseIndex(currentStates);
-		
-		// if (this->current_idx > this->ref_trajectory.size() - 1){
-		// 	start_idx = this->ref_trajectory.size() - 1;
-		// }
-		// else{
-		// 	start_idx = this->current_idx; ++this->current_idx;
-		// }
 		VariablesGrid r = this->getReference(start_idx);
 		algorithm.setReference(r);
 	}
@@ -226,19 +219,19 @@ void mpcPlanner::optimize(const DVector &currentStates, DVector &nextStates, std
 }
 
 void mpcPlanner::optimize(const DVector &currentStates, const std::vector<obstacle> &obstacles, DVector &nextStates, std::vector<pose> &mpc_trajectory, VariablesGrid &xd){
-	DifferentialState x;
-	DifferentialState y;
-	DifferentialState z;
-	DifferentialState vx;
-	DifferentialState vy;
-	DifferentialState vz;
-	DifferentialState roll;
-	DifferentialState pitch;
+	DifferentialState x; 
+	DifferentialState y; 
+	DifferentialState z; 
+	DifferentialState vx; 
+	DifferentialState vy; 
+	DifferentialState vz; 
+	DifferentialState roll; 
+	DifferentialState pitch; 
 	double yaw = 0;
 
-	Control T;
-	Control roll_d;
-	Control pitch_d;
+	Control T; 
+	Control roll_d; 
+	Control pitch_d; 
 
 	// MODEL Definition
 	DifferentialEquation f;
@@ -287,4 +280,5 @@ void mpcPlanner::optimize(const DVector &currentStates, const std::vector<obstac
 	RTalgorithm.getDifferentialStates(xd);
 	mpc_trajectory = this->getTrajectory(xd, start_idx);
 	nextStates = xd.getVector(1);
+	clearAllStaticCounters();
 }

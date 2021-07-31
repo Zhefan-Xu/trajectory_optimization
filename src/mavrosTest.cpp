@@ -83,10 +83,7 @@ void mavrosTest::run(){
 
 	double mass = 1.0; double k_roll = 1.0; double tau_roll = 1.0; double k_pitch = 1.0; double tau_pitch = 1.0; 
 	double T_max = 3 * 9.8; double roll_max = PI_const/6; double pitch_max = PI_const/6;
-	mpcPlanner mp (horizon);
-	mp.loadParameters(mass, k_roll, tau_roll, k_pitch, tau_pitch);
-	mp.loadControlLimits(T_max, roll_max, pitch_max);
-	mp.loadRefTrajectory(trajectory, this->delT);
+
 
 	DVector currentStates = this->getCurrentState();
 	DVector nextStates;
@@ -96,11 +93,9 @@ void mavrosTest::run(){
 
 	ros::Rate rate(1/this->delT);
 	while (ros::ok()){
-		// currentStates = this->getCurrentState();
-		mp.optimize(currentStates, nextStates, mpc_trajectory, xd);
+		std::vector<obstacle> obstacles;
+		mpc_trajectory = dynamicPlanner(trajectory, obstacles, horizon, mass, k_roll, tau_roll, k_pitch, tau_pitch, T_max, roll_max, pitch_max, delT, currentStates, nextStates, xd);
 		currentStates = nextStates;
-		// cout << currentStates << endl;
-		// cout << this->getCurrentState() << endl;
 
 		this->modifyMPCGoal(mpc_trajectory, xd);
 		mpc_trajectory_msg = wrapPathMsg(mpc_trajectory);

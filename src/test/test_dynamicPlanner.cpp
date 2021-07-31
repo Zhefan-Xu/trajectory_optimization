@@ -52,8 +52,12 @@ int main(int argc, char** argv){
 	while (ros::ok()){
 		VariablesGrid xd;
 		std::vector<obstacle> obstacles;
+		auto start_time = high_resolution_clock::now();
 		mpc_trajectory = dynamicPlanner(trajectory, obstacles, horizon, mass, k_roll, tau_roll, k_pitch, tau_pitch, T_max, roll_max, pitch_max, delT, currentStates, nextStates, xd);
 		currentStates = nextStates; 
+		auto end_time = high_resolution_clock::now();
+		auto duration_total = duration_cast<microseconds>(end_time - start_time);
+		cout << "Total: "<< duration_total.count()/1e6 << " seconds. " << endl;		
 		nav_msgs::Path mpc_trajectory_msg = wrapPathMsg(mpc_trajectory);
 		path_vis_pub.publish(path_msg);
 		trajectory_vis_pub.publish(trajectory_msg);
