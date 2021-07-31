@@ -193,7 +193,7 @@ target_link_libraries(test_mpcPlanner ${catkin_LIBRARIES} mpcPlanner polyTrajGen
 target_link_libraries(test_gazeboTrajectory ${catkin_LIBRARIES} mpcPlanner polyTrajGen mapModuleOctomap)
 target_link_libraries(test_mavros_node ${catkin_LIBRARIES} mavrosTest)
 target_link_libraries(test_detector ${catkin_LIBRARIES} fakeDetector)
-target_link_libraries(test_dynamicPlanner ${catkin_LIBRARIES} mpcPlanner)
+target_link_libraries(test_dynamicPlanner ${catkin_LIBRARIES} mpcPlanner polyTrajGen mapModuleOctomap)
 
 # target_link_libraries(test_eigen ${catkin_LIBRARIES})
 

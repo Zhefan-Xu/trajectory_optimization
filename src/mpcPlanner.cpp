@@ -22,6 +22,10 @@ mpcPlanner::mpcPlanner(int _horizon){
 	this->first_time = true;
 }
 
+mpcPlanner::~mpcPlanner(){
+
+}
+
 void mpcPlanner::loadControlLimits(double _T_max, double _roll_max, double _pitch_max){
 	this->T_max = _T_max; //kg
 	this->roll_max = _roll_max; this->pitch_max = _pitch_max;
@@ -86,7 +90,7 @@ VariablesGrid mpcPlanner::getReference(int start_idx){ // need to specify the st
 		++count_horizon;
 	}
 
-	cout << "[MPC INFO]: " << "reference data: \n" << r << endl;
+	// cout << "[MPC INFO]: " << "reference data: \n" << r << endl;
 	return r;
 }
 
@@ -275,13 +279,12 @@ void mpcPlanner::optimize(const DVector &currentStates, const std::vector<obstac
 	ocp.subjectTo( -this->pitch_max <= pitch_d <= this->pitch_max);
 	ocp.subjectTo( -this->roll_max <= roll <= this->roll_max);
 	ocp.subjectTo( -this->pitch_max <= pitch <= this->pitch_max);
-
 	// Algorithm
 	RealTimeAlgorithm RTalgorithm(ocp, this->delT);
 	cout << "[MPC INFO]: " << "Start optimizing..." << endl;
 	RTalgorithm.solve(0, currentStates);
 	cout << "[MPC INFO]: " << "Complete!" << endl;
-	algorithm.getDifferentialStates(xd);
+	RTalgorithm.getDifferentialStates(xd);
 	mpc_trajectory = this->getTrajectory(xd, start_idx);
 	nextStates = xd.getVector(1);
 }

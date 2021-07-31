@@ -32,6 +32,7 @@ private:
 public:
 	mpcPlanner();
 	mpcPlanner(int _horizon);
+	~mpcPlanner();
 	void loadControlLimits(double _T_max, double _roll_max, double _pitch_max);
 	void loadParameters(double _mass, double _k_roll, double _tau_roll, double _k_pitch, double _tau_pitch);
 	void loadRefTrajectory(const std::vector<pose> &_ref_trajectory, double _delT);
