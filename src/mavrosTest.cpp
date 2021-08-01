@@ -18,8 +18,6 @@ mavrosTest::mavrosTest(const ros::NodeHandle &_nh, double _delT=0.1):nh(_nh){
     arming_client = nh.serviceClient<mavros_msgs::CommandBool>("/mavros/cmd/arming");
     set_mode_client = nh.serviceClient<mavros_msgs::SetMode>("/mavros/set_mode");
 
-    
-
 }
 
 void mavrosTest::odom_cb(const nav_msgs::OdometryConstPtr& odom){

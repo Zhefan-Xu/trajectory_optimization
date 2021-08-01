@@ -272,6 +272,16 @@ void mpcPlanner::optimize(const DVector &currentStates, const std::vector<obstac
 	ocp.subjectTo( -this->pitch_max <= pitch_d <= this->pitch_max);
 	ocp.subjectTo( -this->roll_max <= roll <= this->roll_max);
 	ocp.subjectTo( -this->pitch_max <= pitch <= this->pitch_max);
+
+	// TODO: obstacle constraint:
+	for (int t=0; t < this->horizon; ++t){
+		for (obstacle ob: obstacles){
+
+		}
+	}
+
+
+
 	// Algorithm
 	RealTimeAlgorithm RTalgorithm(ocp, this->delT);
 	cout << "[MPC INFO]: " << "Start optimizing..." << endl;
@@ -281,4 +291,18 @@ void mpcPlanner::optimize(const DVector &currentStates, const std::vector<obstac
 	mpc_trajectory = this->getTrajectory(xd, start_idx);
 	nextStates = xd.getVector(1);
 	clearAllStaticCounters();
+}
+
+
+obstacle mpcPlanner::predictObstacleState(const obstacle &ob, int t){
+	obstacle pred_ob;
+	// position prediction
+	pred_ob.x = ob.x + t * ob.vx;
+	pred_ob.y = ob.y + t * ob.vy;
+	pred_ob.z = ob.z + t * ob.vz;
+
+	// uncertainty propagation
+
+
+	return pred_ob;
 }
