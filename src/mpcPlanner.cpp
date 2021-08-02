@@ -274,14 +274,13 @@ void mpcPlanner::optimize(const DVector &currentStates, const std::vector<obstac
 	for (int t=0; t < this->horizon; ++t){
 		for (obstacle ob: obstacles){
 			obstacle pred_ob = this->predictObstacleState(ob, t);
-			DVector ob_pos (3); ob_pos(0) = pred_ob.x; ob_pos(1) = pred_ob.y; ob_pos(2) = pred_ob.z;
-			// ocp.subjectTo(   sqrt(pow((pos(0)-pred_ob.x), 2)/pow(pred_ob.xsize, 2) + pow((pos(1)-pred_ob.y), 2)/pow(pred_ob.ysize, 2) + pow((pos(2)-pred_ob.z), 2)/pow(pred_ob.zsize,2)) -1
-			//                >= 0 ) ; // without probability
-			ocp.subjectTo( sqrt(pow((pos(0)-pred_ob.x), 2)/pow(pred_ob.xsize, 2) + pow((pos(1)-pred_ob.y), 2)/pow(pred_ob.ysize, 2) + pow((pos(2)-pred_ob.z), 2)/pow(pred_ob.zsize,2)) -1
-			            - my_erfinvf(1-2*delta) * sqrt(2 * (pred_ob.varX*pow(pos(0)-pred_ob.x, 2)/pow(pred_ob.xsize, 4) + 
-			               								pred_ob.varY*pow(pos(1)-pred_ob.y, 2)/pow(pred_ob.ysize, 4) + // with probability
-														pred_ob.varZ*pow(pos(2)-pred_ob.z, 2)/pow(pred_ob.zsize, 4))
-														* 1/(pow((pos(0) - pred_ob.x)/pred_ob.xsize, 2) + pow((pos(1) - pred_ob.y)/pred_ob.ysize, 2) + pow((pos(2) - pred_ob.z)/pred_ob.zsize, 2))) >= 0 ) ;						
+			ocp.subjectTo(t,   sqrt(pow((pos(0)-pred_ob.x), 2)/pow(pred_ob.xsize, 2) + pow((pos(1)-pred_ob.y), 2)/pow(pred_ob.ysize, 2) + pow((pos(2)-pred_ob.z), 2)/pow(pred_ob.zsize,2)) -1
+			               >= 0 ) ; // without probability
+			// ocp.subjectTo(t, sqrt(pow((pos(0)-pred_ob.x), 2)/pow(pred_ob.xsize, 2) + pow((pos(1)-pred_ob.y), 2)/pow(pred_ob.ysize, 2) + pow((pos(2)-pred_ob.z), 2)/pow(pred_ob.zsize,2)) -1
+			//             - my_erfinvf(1-2*delta) * sqrt(2 * (pred_ob.varX*pow(pos(0)-pred_ob.x, 2)/pow(pred_ob.xsize, 4) + 
+			//                								pred_ob.varY*pow(pos(1)-pred_ob.y, 2)/pow(pred_ob.ysize, 4) + // with probability
+			// 											pred_ob.varZ*pow(pos(2)-pred_ob.z, 2)/pow(pred_ob.zsize, 4))
+			// 											* 1/(pow((pos(0) - pred_ob.x)/pred_ob.xsize, 2) + pow((pos(1) - pred_ob.y)/pred_ob.ysize, 2) + pow((pos(2) - pred_ob.z)/pred_ob.zsize, 2))) >= 0 ) ;						
 		}
 	}
 

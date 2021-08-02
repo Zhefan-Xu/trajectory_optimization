@@ -11,6 +11,7 @@ mavrosTest::mavrosTest(const ros::NodeHandle &_nh, double _delT=0.1):nh(_nh){
 	path_vis_pub = nh.advertise<visualization_msgs::MarkerArray>("/waypoint_path", 0);
     trajectory_vis_pub = nh.advertise<visualization_msgs::MarkerArray>("/trajectory", 0);
     mpc_trajectory_vis_pub = nh.advertise<nav_msgs::Path>("/mpc_trajectory", 0);
+    obstacle_vis_pub = nh.advertise<visualization_msgs::MarkerArray>("/obstacles", 0);
     
     // goal_pub = nh.advertise<geometry_msgs::PoseStamped>("/cerlab_uav/goal", 10);
 
@@ -88,15 +89,28 @@ void mavrosTest::run(){
 	std::vector<pose> mpc_trajectory;
 	VariablesGrid xd;
 
+	// Detector:
+	std::vector<std::string> obstaclesType {"person_walking", "person_walking_0"};
+	fakeDetector d (nh);
+	d.loadObstacleType(obstaclesType);
 
 	ros::Rate rate(1/this->delT);
 	while (ros::ok()){
-		std::vector<obstacle> obstacles;
+		std::vector<obstacle> obstacles; d.detect(obstacles);
+		auto start_time = high_resolution_clock::now();
 		mpc_trajectory = dynamicPlanner(trajectory, obstacles, horizon, mass, k_roll, tau_roll, k_pitch, tau_pitch, T_max, roll_max, pitch_max, delT, currentStates, nextStates, xd);
 		currentStates = nextStates;
 
+		auto end_time = high_resolution_clock::now();
+		auto duration_total = duration_cast<microseconds>(end_time - start_time);
+		cout << "Total: "<< duration_total.count()/1e6 << " seconds. " << endl;		
+
+
 		this->modifyMPCGoal(mpc_trajectory, xd);
 		mpc_trajectory_msg = wrapPathMsg(mpc_trajectory);
+
+		obstacle_msg = wrapObstacleMsg(obstacles);
+		
 		rate.sleep();
 	}
 }
@@ -161,6 +175,7 @@ void mavrosTest::publishVisMsg(){
 		path_vis_pub.publish(path_msg);
         trajectory_vis_pub.publish(trajectory_msg);
         mpc_trajectory_vis_pub.publish(mpc_trajectory_msg);
+        obstacle_vis_pub.publish(obstacle_msg);
         rate.sleep();
 	}
 }

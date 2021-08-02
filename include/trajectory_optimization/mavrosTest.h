@@ -31,6 +31,7 @@ private:
 	ros::Publisher path_vis_pub;
 	ros::Publisher trajectory_vis_pub;
 	ros::Publisher mpc_trajectory_vis_pub;
+	ros::Publisher obstacle_vis_pub;
 
 	ros::ServiceClient gazebo_setModel_client;
 	ros::ServiceClient arming_client;
@@ -41,6 +42,7 @@ private:
 	mavros_msgs::PositionTarget goal;
 	visualization_msgs::MarkerArray path_msg;
 	visualization_msgs::MarkerArray trajectory_msg;
+	visualization_msgs::MarkerArray obstacle_msg;
 	nav_msgs::Path mpc_trajectory_msg;
 
 
