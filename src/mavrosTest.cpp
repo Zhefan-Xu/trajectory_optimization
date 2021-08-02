@@ -217,8 +217,8 @@ void mavrosTest::modifyMPCGoal(const std::vector<pose> &mpc_trajectory, const Va
 	double yaw = mpc_trajectory[forward_idx].yaw;
 	DVector goalStates = xd.getVector(forward_idx);
 	goal.position.x = goalStates(0); goal.position.y = goalStates(1); goal.position.z = goalStates(2);
-	goal.velocity.x = goalStates(3); goal.velocity.y = goalStates(4); goal.velocity.z = goalStates(5);
+	// goal.velocity.x = goalStates(3); goal.velocity.y = goalStates(4); goal.velocity.z = goalStates(5);
 	// cout << goalStates << endl;
 	goal.yaw = yaw; // goal.type_mask = 8 + 16 + 32 + 64 + 128 + 256 + 2048;
-	goal.type_mask =  64 + 128 + 256 + 2048;
+	goal.type_mask =  8 + 16 +  32 + 64 + 128 + 256 + 2048;
 }

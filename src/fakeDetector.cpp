@@ -19,7 +19,7 @@ void fakeDetector::detect(std::vector<obstacle> &obstacles){
 		ob.vx = gms_srv.response.twist.linear.x;
 		ob.vy = gms_srv.response.twist.linear.y;
 		ob.vz = gms_srv.response.twist.linear.z;
-		ob.xsize = 0.6; ob.ysize = 0.6; ob.zsize = 1.8;
+		ob.xsize = 1.0; ob.ysize = 1.0; ob.zsize = 1.8;
 		ob.varX = 1e-4; ob.varY = 1e-4; ob.varZ = 1e-4;
 		ob.varVx = 1e-4; ob.varVy = 1e-4; ob.varVz = 1e-4;
 		obstacles.push_back(ob);
