@@ -218,15 +218,10 @@ void mpcPlanner::optimize(const DVector &currentStates, DVector &nextStates, std
 	nextStates = xd.getVector(1);
 }
 
-void mpcPlanner::optimize(const DVector &currentStates, const std::vector<obstacle> &obstacles, DVector &nextStates, std::vector<pose> &mpc_trajectory, VariablesGrid &xd){
-	DifferentialState x; 
-	DifferentialState y; 
-	DifferentialState z; 
-	DifferentialState vx; 
-	DifferentialState vy; 
-	DifferentialState vz; 
-	DifferentialState roll; 
-	DifferentialState pitch; 
+void mpcPlanner::optimize(const DVector &currentStates, const std::vector<obstacle> &obstacles, DVector &nextStates, std::vector<pose> &mpc_trajectory, VariablesGrid &xd){ 
+	DifferentialState pos ("position", 3, 1);
+	DifferentialState vel ("velocity", 3, 1);
+	DifferentialState angle ("angle", 2, 1);
 	double yaw = 0;
 
 	Control T; 
@@ -235,20 +230,20 @@ void mpcPlanner::optimize(const DVector &currentStates, const std::vector<obstac
 
 	// MODEL Definition
 	DifferentialEquation f;
-	f << dot(x) == vx;
-	f << dot(y) == vy;
-	f << dot(z) == vz;
-	f << dot(vx) == T*cos(roll)*sin(pitch)*cos(yaw) + T*sin(roll)*sin(yaw); 
-	f << dot(vy) == T*cos(roll)*sin(pitch)*sin(yaw) - T*sin(roll)*cos(yaw);
-	f << dot(vz) == T*cos(roll)*cos(pitch) - this->g;
-	f << dot(roll) == (1.0/this->tau_roll) * (this->k_roll * roll_d - roll);
-	f << dot(pitch) == (1.0/this->tau_pitch) * (this->k_pitch * pitch_d - pitch);
+	f << dot(pos(0)) == vel(0);
+	f << dot(pos(1)) == vel(1);
+	f << dot(pos(2)) == vel(2);
+	f << dot(vel(0)) == T*cos(angle(0))*sin(angle(1))*cos(yaw) + T*sin(angle(0))*sin(yaw); 
+	f << dot(vel(1)) == T*cos(angle(0))*sin(angle(1))*sin(yaw) - T*sin(angle(0))*cos(yaw);
+	f << dot(vel(2)) == T*cos(angle(0))*cos(angle(1)) - this->g;
+	f << dot(angle(0)) == (1.0/this->tau_roll) * (this->k_roll * roll_d - angle(0));
+	f << dot(angle(1)) == (1.0/this->tau_pitch) * (this->k_pitch * pitch_d - angle(1));
 
 	// Least Square Function
 	Function h;
-	h << x;
-	h << y;
-	h << z;
+	h << pos(0);
+	h << pos(1);
+	h << pos(2);
 
 	DMatrix Q(3,3);
     Q.setIdentity(); Q(0,0) = 10.0; Q(1,1) = 10.0; Q(2,2) = 10.0; 
@@ -267,19 +262,28 @@ void mpcPlanner::optimize(const DVector &currentStates, const std::vector<obstac
 	// Dynamic Constraint
 	ocp.subjectTo(f); 
 	// Control Constraints
+	// ConstraintComponent force_limit (0 <= T <= this->T_max);
+	// ocp.subjectTo( force_limit );
 	ocp.subjectTo( 0 <= T <= this->T_max ); 
 	ocp.subjectTo( -this->roll_max <= roll_d <= this->roll_max);
 	ocp.subjectTo( -this->pitch_max <= pitch_d <= this->pitch_max);
-	ocp.subjectTo( -this->roll_max <= roll <= this->roll_max);
-	ocp.subjectTo( -this->pitch_max <= pitch <= this->pitch_max);
+
 
 	// TODO: obstacle constraint:
+	double delta = 0.2;
 	for (int t=0; t < this->horizon; ++t){
 		for (obstacle ob: obstacles){
-
+			obstacle pred_ob = this->predictObstacleState(ob, t);
+			DVector ob_pos (3); ob_pos(0) = pred_ob.x; ob_pos(1) = pred_ob.y; ob_pos(2) = pred_ob.z;
+			// ocp.subjectTo(   sqrt(pow((pos(0)-pred_ob.x), 2)/pow(pred_ob.xsize, 2) + pow((pos(1)-pred_ob.y), 2)/pow(pred_ob.ysize, 2) + pow((pos(2)-pred_ob.z), 2)/pow(pred_ob.zsize,2)) -1
+			//                >= 0 ) ; // without probability
+			ocp.subjectTo( sqrt(pow((pos(0)-pred_ob.x), 2)/pow(pred_ob.xsize, 2) + pow((pos(1)-pred_ob.y), 2)/pow(pred_ob.ysize, 2) + pow((pos(2)-pred_ob.z), 2)/pow(pred_ob.zsize,2)) -1
+			            - my_erfinvf(1-2*delta) * sqrt(2 * (pred_ob.varX*pow(pos(0)-pred_ob.x, 2)/pow(pred_ob.xsize, 4) + 
+			               								pred_ob.varY*pow(pos(1)-pred_ob.y, 2)/pow(pred_ob.ysize, 4) + // with probability
+														pred_ob.varZ*pow(pos(2)-pred_ob.z, 2)/pow(pred_ob.zsize, 4))
+														* 1/(pow((pos(0) - pred_ob.x)/pred_ob.xsize, 2) + pow((pos(1) - pred_ob.y)/pred_ob.ysize, 2) + pow((pos(2) - pred_ob.z)/pred_ob.zsize, 2))) >= 0 ) ;						
 		}
 	}
-
 
 
 	// Algorithm
@@ -294,15 +298,21 @@ void mpcPlanner::optimize(const DVector &currentStates, const std::vector<obstac
 }
 
 
-obstacle mpcPlanner::predictObstacleState(const obstacle &ob, int t){
+obstacle mpcPlanner::predictObstacleState(const obstacle &ob, int t){ // t is the time step
 	obstacle pred_ob;
 	// position prediction
-	pred_ob.x = ob.x + t * ob.vx;
-	pred_ob.y = ob.y + t * ob.vy;
-	pred_ob.z = ob.z + t * ob.vz;
+	pred_ob.x = ob.x + t * this->delT * ob.vx;
+	pred_ob.y = ob.y + t * this->delT * ob.vy;
+	pred_ob.z = ob.z + t * this->delT * ob.vz;
 
 	// uncertainty propagation
+	pred_ob.varX = ob.varX + ob.varVx * t * pow(this->delT, 2);
+	pred_ob.varY = ob.varY + ob.varVy * t * pow(this->delT, 2);
+	pred_ob.varZ = ob.varZ + ob.varVz * t * pow(this->delT, 2);
 
-
+	// size does not change:
+	pred_ob.xsize = ob.xsize; 
+	pred_ob.ysize = ob.ysize;
+	pred_ob.zsize = ob.zsize;
 	return pred_ob;
 }

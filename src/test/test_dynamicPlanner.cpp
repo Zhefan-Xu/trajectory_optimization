@@ -63,6 +63,7 @@ int main(int argc, char** argv){
 		trajectory_vis_pub.publish(trajectory_msg);
 		mpc_trajectory_vis_pub.publish(mpc_trajectory_msg);		
 		loop_rate.sleep();
+		break;
 	}
 
 	return 0;

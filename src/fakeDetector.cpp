@@ -21,6 +21,7 @@ void fakeDetector::detect(std::vector<obstacle> &obstacles){
 		ob.vz = gms_srv.response.twist.linear.z;
 		ob.xsize = 0.6; ob.ysize = 0.6; ob.zsize = 1.8;
 		ob.varX = 1e-4; ob.varY = 1e-4; ob.varZ = 1e-4;
+		ob.varVx = 1e-4; ob.varVy = 1e-4; ob.varVz = 1e-4;
 		obstacles.push_back(ob);
 		cout << "[fake detector INFO]: " << modelName << " x: " << ob.x <<  " y: " << ob.y  << " z: " << ob.z <<  " vx: " << ob.vx <<  " vy: " << ob.vy  << " vz: " << ob.vz << endl;
 	}
