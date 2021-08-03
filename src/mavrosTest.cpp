@@ -43,7 +43,7 @@ void mavrosTest::loadPath(std::string filename, int idx){
 void mavrosTest::setInitialPosition(){
 	std::string modelName = "iris";
 	double setX = this->path[0].x; double setY = this->path[0].y;
-	double setZ = this->current_odom.pose.pose.position.z;
+	double setZ = 0; //this->current_odom.pose.pose.position.z;
 	gazebo_msgs::SetModelState state_srv;
 	gazebo_msgs::ModelState modelState;
 	modelState.model_name = modelName;
@@ -78,7 +78,7 @@ void mavrosTest::run(){
 	trajectory_msg = wrapVisMsg(trajectory, 0, 1, 0);
 
 	// MPC
-	int horizon = 40; // MPC horizon
+	int horizon = 20; // MPC horizon
 
 	double mass = 1.0; double k_roll = 1.0; double tau_roll = 1.0; double k_pitch = 1.0; double tau_pitch = 1.0; 
 	double T_max = 3 * 9.8; double roll_max = PI_const/6; double pitch_max = PI_const/6;
