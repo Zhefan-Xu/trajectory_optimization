@@ -4,6 +4,8 @@
 #include <trajectory_optimization/fakeDetector.h>
 #include <acado_toolkit.hpp>
 #include <acado_gnuplot.hpp>
+#include <acado_optimal_control.hpp>
+
 
 USING_NAMESPACE_ACADO
 

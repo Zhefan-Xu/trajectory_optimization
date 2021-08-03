@@ -245,10 +245,14 @@ void mpcPlanner::optimize(const DVector &currentStates, const std::vector<obstac
 	f << dot(pitch) == (1.0/this->tau_pitch) * (this->k_pitch * pitch_d - pitch);
 
 	// Least Square Function
-	Function h;
+	Function h, m;
 	h << x;
 	h << y;
 	h << z;
+
+	m << 10.0*x;
+    m << 10.0*y;
+    m << 10.0*z;
 
 	DMatrix Q(3,3);
     Q.setIdentity(); Q(0,0) = 1.0; Q(1,1) = 1.0; Q(2,2) = 1.0; 
@@ -263,6 +267,8 @@ void mpcPlanner::optimize(const DVector &currentStates, const std::vector<obstac
 	// setup OCP
 	OCP ocp(r);
 	ocp.minimizeLSQ(Q, h, r); // Objective
+	// ocp.minimizeLSQEndTerm( m, r.getLastVector() );
+	// cout << r.getLastVector() << endl;
 
 	// Dynamic Constraint
 	ocp.subjectTo(f); 

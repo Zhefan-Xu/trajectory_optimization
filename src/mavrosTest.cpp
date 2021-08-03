@@ -99,7 +99,8 @@ void mavrosTest::run(){
 		std::vector<obstacle> obstacles; d.detect(obstacles);
 		auto start_time = high_resolution_clock::now();
 		mpc_trajectory = dynamicPlanner(trajectory, obstacles, horizon, mass, k_roll, tau_roll, k_pitch, tau_pitch, T_max, roll_max, pitch_max, delT, currentStates, nextStates, xd);
-		currentStates = nextStates;
+		// currentStates = nextStates;
+		currentStates = this->getCurrentState();
 
 		auto end_time = high_resolution_clock::now();
 		auto duration_total = duration_cast<microseconds>(end_time - start_time);
@@ -213,7 +214,8 @@ DVector mavrosTest::getCurrentState(){
 }
 
 void mavrosTest::modifyMPCGoal(const std::vector<pose> &mpc_trajectory, const VariablesGrid &xd){
-	int forward_idx = 1;
+	// int forward_idx = 1;
+	int forward_idx = 10;
 	double yaw = mpc_trajectory[forward_idx].yaw;
 	DVector goalStates = xd.getVector(forward_idx);
 	goal.position.x = goalStates(0); goal.position.y = goalStates(1); goal.position.z = goalStates(2);
