@@ -66,7 +66,7 @@ void mavrosTest::run(){
 	double res = 0.1; // map resolution
 	double xsize = 0.2; double ysize = 0.2; double zsize = 0.1; // Robot collision box size
 	int degree = 7; // polynomial degree
-	double velocityd = 1; // desired average velocity
+	double velocityd = 1.0; // desired average velocity
 	int diff_degree = 4; // Minimum snap (4), minimum jerk (3)
 	double perturb = 1; // Regularization term and also make PSD -> PD
 	bool shortcut = true; // shortcut waypoints
@@ -99,8 +99,8 @@ void mavrosTest::run(){
 		std::vector<obstacle> obstacles; d.detect(obstacles);
 		auto start_time = high_resolution_clock::now();
 		mpc_trajectory = dynamicPlanner(trajectory, obstacles, horizon, mass, k_roll, tau_roll, k_pitch, tau_pitch, T_max, roll_max, pitch_max, delT, currentStates, nextStates, xd);
-		// currentStates = nextStates;
-		currentStates = this->getCurrentState();
+		currentStates = nextStates;
+		// currentStates = this->getCurrentState();
 
 		auto end_time = high_resolution_clock::now();
 		auto duration_total = duration_cast<microseconds>(end_time - start_time);
@@ -171,7 +171,7 @@ void mavrosTest::publishGoal(){
 }
 
 void mavrosTest::publishVisMsg(){
-	ros::Rate rate(2);
+	ros::Rate rate(10);
 	while (ros::ok()){
 		path_vis_pub.publish(path_msg);
         trajectory_vis_pub.publish(trajectory_msg);

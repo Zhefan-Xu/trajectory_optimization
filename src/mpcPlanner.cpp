@@ -163,7 +163,7 @@ RealTimeAlgorithm mpcPlanner::constructOptimizer(const DVector &currentStates){
 	h << z;
 
 	DMatrix Q(3,3);
-    Q.setIdentity(); Q(0,0) = 10.0; Q(1,1) = 10.0; Q(2,2) = 10.0; 
+    Q.setIdentity(); Q(0,0) = 10.0; Q(1,1) = 10.0; Q(2,2) = 100.0; 
 	
 	// get tracking trajectory (future N seconds)
 	int start_idx = this->findNearestPoseIndex(currentStates);
@@ -250,12 +250,11 @@ void mpcPlanner::optimize(const DVector &currentStates, const std::vector<obstac
 	h << y;
 	h << z;
 
-	m << 10.0*x;
-    m << 10.0*y;
-    m << 10.0*z;
+
+
 
 	DMatrix Q(3,3);
-    Q.setIdentity(); Q(0,0) = 1.0; Q(1,1) = 1.0; Q(2,2) = 1.0; 
+    Q.setIdentity(); Q(0,0) = 10.0; Q(1,1) = 10.0; Q(2,2) = 10.0; 
 	
 	// get tracking trajectory (future N seconds)
 	int start_idx = this->findNearestPoseIndex(currentStates);
@@ -282,12 +281,12 @@ void mpcPlanner::optimize(const DVector &currentStates, const std::vector<obstac
 	// ocp.subjectTo( -this->pitch_max <= pitch <= this->pitch_max);
 
 	// TODO: obstacle constraint:
-	double delta = 0.3;
+	double delta = 0.1;
 	for (int t=0; t < this->horizon; ++t){
 		for (obstacle ob: obstacles){
 			obstacle pred_ob = this->predictObstacleState(ob, t);
-			// ocp.subjectTo(t,   sqrt(pow((pos(0)-pred_ob.x), 2)/pow(pred_ob.xsize/2, 2) + pow((pos(1)-pred_ob.y), 2)/pow(pred_ob.ysize/2, 2) + pow((pos(2)-pred_ob.z), 2)/pow(pred_ob.zsize/2,2)) -1
-			//                >= 0 ) ; // without probability
+			// ocp.subjectTo(t,   sqrt(pow((x-pred_ob.x), 2)/pow(pred_ob.xsize/2, 2) + pow((y-pred_ob.y), 2)/pow(pred_ob.ysize/2, 2) + pow((z-pred_ob.z), 2)/pow(pred_ob.zsize/2,2)) -1
+			//                >= 0.0 ) ; // without probability
 			ocp.subjectTo(t, sqrt(pow((x-pred_ob.x), 2)/pow(pred_ob.xsize/2, 2) + pow((y-pred_ob.y), 2)/pow(pred_ob.ysize/2, 2) + pow((z-pred_ob.z), 2)/pow(pred_ob.zsize/2,2)) -1
 			            - my_erfinvf(1-2*delta) * sqrt(2 * (pred_ob.varX*pow(x-pred_ob.x, 2)/pow(pred_ob.xsize/2, 4) + 
 			               								pred_ob.varY*pow(y-pred_ob.y, 2)/pow(pred_ob.ysize/2, 4) + // with probability
