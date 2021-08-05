@@ -94,6 +94,18 @@ VariablesGrid mpcPlanner::getReference(int start_idx){ // need to specify the st
 	return r;
 }
 
+VariablesGrid mpcPlanner::getReference(const pose &p){ // static target
+	VariablesGrid r (3, 0);
+	DVector pose_i (3);
+	pose_i(0) = p.x; pose_i(1) = p.y; pose_i(2) = p.z;
+	double t = 0; 
+	for (int i=0; i<this->horizon; ++i){
+		r.addVector(pose_i, t);
+		t += this->delT;
+	}
+	return r;
+}
+
 std::vector<pose> mpcPlanner::getTrajectory(const VariablesGrid &xd, int start_idx){
 	std::vector<pose> mpc_trajectory;
 	for (int i=0; i<this->horizon; ++i){
@@ -128,6 +140,22 @@ std::vector<pose> mpcPlanner::getTrajectory(const VariablesGrid &xd, int start_i
 	return mpc_trajectory;
 }
 
+pose mpcPlanner::getAvoidanceTarget(int start_idx, const obstacle &ob){
+	double min_dist_thresh = 1.5;
+	for (int i=start_idx; i < this->ref_trajectory.size(); ++i){
+		pose p = this->ref_trajectory[i];
+		bool passObstacle = not (this->isObstacleFront(p, pose(ob.x, ob.y, ob.z)));
+		if (passObstacle){
+			double distance = getDistance(pose(p.x, p.y, ob.z), pose(ob.x, ob.y, ob.z));
+			if (distance > min_dist_thresh){
+				return p;
+			}
+		}
+	}
+
+	return this->ref_trajectory[start_idx]; // fail to find a proper target for avoidance -> stay at current position
+}
+
 
 bool mpcPlanner::isObstacleFront(const pose &p, const pose &ob_p){
 	// unit vector from yaw:
@@ -136,7 +164,7 @@ bool mpcPlanner::isObstacleFront(const pose &p, const pose &ob_p){
 
 	// facing vector
 	double dx, dy, dz;
-	dx = ob_p.x - p.x; dy = ob_p.y - p.y; dz = ob_p.z - p.z;
+	dx = ob_p.x - p.x; dy = ob_p.y - p.y; dz = 0;
 
 
 	// if product > 0, return true
@@ -149,17 +177,18 @@ bool mpcPlanner::isObstacleFront(const pose &p, const pose &ob_p){
 	}
 }
 
-bool mpcPlanner::isMeetingObstacle(const DVector &currentStates, const std::vector<obstacle> &obstacles, int start_idx){
-	pose p_start = this->ref_trajectory[start_idx];
-	double distance_thresh = 3.0;
+bool mpcPlanner::isMeetingObstacle(const DVector &currentStates, const std::vector<obstacle> &obstacles, int &obstacle_idx){
+	double distance_thresh = 3.0; int count_obstacle_idx = 0;
 	// 1. calculate distance to each obstacles
 	for (obstacle ob: obstacles){
-		double distance = getDistance(p_start, pose(ob.x, ob.y, ob.z));
+		double distance = getDistance(pose(currentStates(0), currentStates(1), currentStates(2)), pose(ob.x, ob.y, ob.z));
 		if (distance < distance_thresh){ // only consider to be close when less than threshold
-			if (this->isObstacleFront(p_start, pose(ob.x, ob.y, ob.z))){ // check if it is facing
+			if (this->isObstacleFront(pose(currentStates(0), currentStates(1), currentStates(2)), pose(ob.x, ob.y, ob.z))){ // check if it is facing
+				obstacle_idx = count_obstacle_idx;
 				return true;
 			}
 		}
+		++count_obstacle_idx;
 	}
 	return false;
 }
@@ -284,12 +313,6 @@ void mpcPlanner::optimize(const DVector &currentStates, const std::vector<obstac
 	h << x;
 	h << y;
 	h << z;
-	// for (obstacle ob: obstacles){
-	// 	h << 1/exp(1.0 * sqrt(pow(x-ob.x, 2) + pow(y-ob.y, 2) + pow(z-ob.z, 2)));
-	// }
-	
-
-
 
 
 	// DMatrix Q(3+obstacles.size(),3+obstacles.size());
@@ -300,14 +323,22 @@ void mpcPlanner::optimize(const DVector &currentStates, const std::vector<obstac
 	int start_idx = this->findNearestPoseIndex(currentStates);
 	// int start_idx = 0;
 
-	bool meetObstacle = this->isMeetingObstacle(currentStates, obstacles, start_idx);
+	VariablesGrid r;
+
+	int obstacle_idx = -1;
+	bool meetObstacle = this->isMeetingObstacle(currentStates, obstacles, obstacle_idx); 
 	if (meetObstacle){
 		cout << "[MPC INFO]: " << "FACING OBSTACLE!!!!!!!" << endl;	
+		pose avoidanceTarget = this->getAvoidanceTarget(start_idx, obstacles[obstacle_idx]);
+		r = this->getReference(avoidanceTarget);
+		cout << r << endl;
+	}
+	else{
+		r = this->getReference(start_idx);
 	}
 	
 
-	cout <<"[MPC INFO]: " << "start_idx: " << start_idx << endl;
-	VariablesGrid r = this->getReference(start_idx);
+	cout <<"[MPC INFO]: " << "start_idx: " << start_idx << endl; 
 
 	// setup OCP
 	OCP ocp(r);
@@ -318,8 +349,7 @@ void mpcPlanner::optimize(const DVector &currentStates, const std::vector<obstac
 	// Dynamic Constraint
 	ocp.subjectTo(f); 
 	// Control Constraints
-	// ConstraintComponent force_limit (0 <= T <= this->T_max);
-	// ocp.subjectTo( force_limit );
+
 	ocp.subjectTo( 0 <= T <= this->T_max ); 
 	ocp.subjectTo( -this->roll_max <= roll_d <= this->roll_max);
 	ocp.subjectTo( -this->pitch_max <= pitch_d <= this->pitch_max);

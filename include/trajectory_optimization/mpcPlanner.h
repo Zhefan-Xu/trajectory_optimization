@@ -42,9 +42,11 @@ public:
 	int findNearestPoseIndex(pose p);
 	int findNearestPoseIndex(const DVector &states); // states
 	VariablesGrid getReference(int start_idx);
+	VariablesGrid getReference(const pose &p);
 	std::vector<pose> getTrajectory(const VariablesGrid &xd, int start_idx);
+	pose getAvoidanceTarget(int start_idx, const obstacle &ob);
 	bool isObstacleFront(const pose &p, const pose &ob_p);
-	bool isMeetingObstacle(const DVector &currentStates, const std::vector<obstacle> &obstacles, int start_idx);
+	bool isMeetingObstacle(const DVector &currentStates, const std::vector<obstacle> &obstacles, int &obstacle_idx);
 	RealTimeAlgorithm constructOptimizer(const DVector &currentStates);
 	void optimize(const DVector &currentStates, DVector &nextStates, std::vector<pose> &mpc_trajectory, VariablesGrid &xd);
 	void optimize(const DVector &currentStates, const std::vector<obstacle> &obstacles, DVector &nextStates, std::vector<pose> &mpc_trajectory, VariablesGrid &xd);
