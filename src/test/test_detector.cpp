@@ -12,7 +12,7 @@ int main(int argc, char** argv){
 	fakeDetector d (nh);
 	d.loadObstacleType(obstaclesType);
 	
-	ros::Rate rate(2);
+	ros::Rate rate(20);
 	while (ros::ok()){
 		std::vector<obstacle> obstacles;
 		d.detect(obstacles);

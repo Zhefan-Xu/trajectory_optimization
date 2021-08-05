@@ -99,8 +99,8 @@ void mavrosTest::run(){
 		std::vector<obstacle> obstacles; d.detect(obstacles);
 		auto start_time = high_resolution_clock::now();
 		mpc_trajectory = dynamicPlanner(trajectory, obstacles, horizon, mass, k_roll, tau_roll, k_pitch, tau_pitch, T_max, roll_max, pitch_max, delT, currentStates, nextStates, xd);
-		currentStates = nextStates;
-		// currentStates = this->getCurrentState();
+		// currentStates = nextStates;
+		currentStates = this->getCurrentState();
 
 		auto end_time = high_resolution_clock::now();
 		auto duration_total = duration_cast<microseconds>(end_time - start_time);

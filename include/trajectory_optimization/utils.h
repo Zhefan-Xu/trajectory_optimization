@@ -14,6 +14,12 @@ struct pose{
 	double y;
 	double z;
 	double yaw;
+    pose(){
+        x = 0; y = 0; z = 0; yaw = 0;
+    }
+    pose(double _x, double _y, double _z){
+        x = _x; y = _y; _z = z; yaw = 0;
+    }   
 };
 
 struct obstacle{
@@ -55,6 +61,7 @@ double getDistance(pose p1, pose p2){
 	return sqrt(pow((p1.x - p2.x),2) + pow((p1.y - p2.y),2) + pow((p1.z - p2.z),2));	
 
 }
+
 
 float my_logf (float);
 

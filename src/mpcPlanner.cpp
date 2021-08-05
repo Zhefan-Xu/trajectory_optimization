@@ -129,6 +129,41 @@ std::vector<pose> mpcPlanner::getTrajectory(const VariablesGrid &xd, int start_i
 }
 
 
+bool mpcPlanner::isObstacleFront(const pose &p, const pose &ob_p){
+	// unit vector from yaw:
+	double udx, udy, udz;
+	udx = cos(p.yaw); udy = sin(p.yaw); udz = 0;
+
+	// facing vector
+	double dx, dy, dz;
+	dx = ob_p.x - p.x; dy = ob_p.y - p.y; dz = ob_p.z - p.z;
+
+
+	// if product > 0, return true
+	double prod = dx * udx + dy * udy + dz * udz;
+	if (prod > 0){
+		return true;
+	}
+	else{
+		return false;
+	}
+}
+
+bool mpcPlanner::isMeetingObstacle(const DVector &currentStates, const std::vector<obstacle> &obstacles, int start_idx){
+	pose p_start = this->ref_trajectory[start_idx];
+	double distance_thresh = 3.0;
+	// 1. calculate distance to each obstacles
+	for (obstacle ob: obstacles){
+		double distance = getDistance(p_start, pose(ob.x, ob.y, ob.z));
+		if (distance < distance_thresh){ // only consider to be close when less than threshold
+			if (this->isObstacleFront(p_start, pose(ob.x, ob.y, ob.z))){ // check if it is facing
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 
 RealTimeAlgorithm mpcPlanner::constructOptimizer(const DVector &currentStates){
 	DifferentialState x;
@@ -245,20 +280,31 @@ void mpcPlanner::optimize(const DVector &currentStates, const std::vector<obstac
 	f << dot(pitch) == (1.0/this->tau_pitch) * (this->k_pitch * pitch_d - pitch);
 
 	// Least Square Function
-	Function h, m;
+	Function h;
 	h << x;
 	h << y;
 	h << z;
+	// for (obstacle ob: obstacles){
+	// 	h << 1/exp(1.0 * sqrt(pow(x-ob.x, 2) + pow(y-ob.y, 2) + pow(z-ob.z, 2)));
+	// }
+	
 
 
 
 
-	DMatrix Q(3,3);
+	// DMatrix Q(3+obstacles.size(),3+obstacles.size());
+	DMatrix Q(3, 3);
     Q.setIdentity(); Q(0,0) = 10.0; Q(1,1) = 10.0; Q(2,2) = 10.0; 
 	
 	// get tracking trajectory (future N seconds)
 	int start_idx = this->findNearestPoseIndex(currentStates);
 	// int start_idx = 0;
+
+	bool meetObstacle = this->isMeetingObstacle(currentStates, obstacles, start_idx);
+	if (meetObstacle){
+		cout << "[MPC INFO]: " << "FACING OBSTACLE!!!!!!!" << endl;	
+	}
+	
 
 	cout <<"[MPC INFO]: " << "start_idx: " << start_idx << endl;
 	VariablesGrid r = this->getReference(start_idx);
@@ -281,17 +327,17 @@ void mpcPlanner::optimize(const DVector &currentStates, const std::vector<obstac
 	// ocp.subjectTo( -this->pitch_max <= pitch <= this->pitch_max);
 
 	// TODO: obstacle constraint:
-	double delta = 0.1;
+	double delta = 0.3;
 	for (int t=0; t < this->horizon; ++t){
 		for (obstacle ob: obstacles){
 			obstacle pred_ob = this->predictObstacleState(ob, t);
-			// ocp.subjectTo(t,   sqrt(pow((x-pred_ob.x), 2)/pow(pred_ob.xsize/2, 2) + pow((y-pred_ob.y), 2)/pow(pred_ob.ysize/2, 2) + pow((z-pred_ob.z), 2)/pow(pred_ob.zsize/2,2)) -1
-			//                >= 0.0 ) ; // without probability
-			ocp.subjectTo(t, sqrt(pow((x-pred_ob.x), 2)/pow(pred_ob.xsize/2, 2) + pow((y-pred_ob.y), 2)/pow(pred_ob.ysize/2, 2) + pow((z-pred_ob.z), 2)/pow(pred_ob.zsize/2,2)) -1
-			            - my_erfinvf(1-2*delta) * sqrt(2 * (pred_ob.varX*pow(x-pred_ob.x, 2)/pow(pred_ob.xsize/2, 4) + 
-			               								pred_ob.varY*pow(y-pred_ob.y, 2)/pow(pred_ob.ysize/2, 4) + // with probability
-														pred_ob.varZ*pow(z-pred_ob.z, 2)/pow(pred_ob.zsize/2, 4))
-														* 1/(pow((x - pred_ob.x)/pred_ob.xsize/2, 2) + pow((y - pred_ob.y)/pred_ob.ysize/2, 2) + pow((z - pred_ob.z)/pred_ob.zsize/2, 2))) >= 0 ) ;						
+			ocp.subjectTo(t,   sqrt(pow((x-pred_ob.x), 2)/pow(pred_ob.xsize/2, 2) + pow((y-pred_ob.y), 2)/pow(pred_ob.ysize/2, 2) + pow((z-pred_ob.z), 2)/pow(pred_ob.zsize/2,2)) -1
+			               >= 0.0 ) ; // without probability
+			// ocp.subjectTo(t, sqrt(pow((x-pred_ob.x), 2)/pow(pred_ob.xsize/2, 2) + pow((y-pred_ob.y), 2)/pow(pred_ob.ysize/2, 2) + pow((z-pred_ob.z), 2)/pow(pred_ob.zsize/2,2)) -1
+			//             - my_erfinvf(1-2*delta) * sqrt(2 * (pred_ob.varX*pow(x-pred_ob.x, 2)/pow(pred_ob.xsize/2, 4) + 
+			//                								pred_ob.varY*pow(y-pred_ob.y, 2)/pow(pred_ob.ysize/2, 4) + // with probability
+			// 											pred_ob.varZ*pow(z-pred_ob.z, 2)/pow(pred_ob.zsize/2, 4))
+			// 											* 1/(pow((x - pred_ob.x)/pred_ob.xsize/2, 2) + pow((y - pred_ob.y)/pred_ob.ysize/2, 2) + pow((z - pred_ob.z)/pred_ob.zsize/2, 2))) >= 0 ) ;						
 		}
 	}
 
