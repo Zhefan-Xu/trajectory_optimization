@@ -331,7 +331,6 @@ void mpcPlanner::optimize(const DVector &currentStates, const std::vector<obstac
 		cout << "[MPC INFO]: " << "FACING OBSTACLE!!!!!!!" << endl;	
 		pose avoidanceTarget = this->getAvoidanceTarget(start_idx, obstacles[obstacle_idx]);
 		r = this->getReference(avoidanceTarget);
-		cout << r << endl;
 	}
 	else{
 		r = this->getReference(start_idx);
