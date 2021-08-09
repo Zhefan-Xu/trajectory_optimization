@@ -116,6 +116,8 @@ void mavrosTest::run(){
 	}
 }
 
+// TODO detect obstacles:
+
 void mavrosTest::takeoff(){
 	bool takeoff = false;
 	goal.position.x = this->path[0].x; goal.position.y = this->path[0].y; goal.position.z = this->path[0].z;
