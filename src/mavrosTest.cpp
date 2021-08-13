@@ -217,6 +217,7 @@ DVector mavrosTest::getCurrentState(){
 
 void mavrosTest::modifyMPCGoal(const std::vector<pose> &mpc_trajectory, const VariablesGrid &xd){
 	// int forward_idx = 1;
+	// int forward_idx = 3;
 	int forward_idx = 10;
 	double yaw = mpc_trajectory[forward_idx].yaw;
 	DVector goalStates = xd.getVector(forward_idx);
