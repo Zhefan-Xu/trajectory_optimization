@@ -69,7 +69,8 @@ void mavrosTest::run(){
 	double velocityd = 1.0; // desired average velocity
 	int diff_degree = 4; // Minimum snap (4), minimum jerk (3)
 	double perturb = 1; // Regularization term and also make PSD -> PD
-	bool shortcut = true; // shortcut waypoints
+	// bool shortcut = true; // shortcut waypoints
+	bool shortcut = false; // shortcut waypoints
 	std::vector<pose> loadPath;
 
 	// solve trajectory:
