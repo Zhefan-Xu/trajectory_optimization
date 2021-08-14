@@ -38,6 +38,10 @@ void mavrosTest::state_cb(const mavros_msgs::State::ConstPtr& mavros_state){
 void mavrosTest::loadPath(std::string filename, int idx){
 	std::vector<std::vector<pose>> paths = read_waypoint_file(filename);
 	this->path = paths[idx];
+} 
+
+void mavrosTest::loadObstacleType(const std::vector<std::string> &_obstaclesType){
+	this->obstaclesType = _obstaclesType;
 }
 
 void mavrosTest::setInitialPosition(){
@@ -91,7 +95,7 @@ void mavrosTest::run(){
 	VariablesGrid xd;
 
 	// Detector:
-	std::vector<std::string> obstaclesType {"person_walking", "person_walking_0"};
+	// std::vector<std::string> obstaclesType {"person_walking", "person_walking_0"};
 	fakeDetector d (nh);
 	d.loadObstacleType(obstaclesType);
 

@@ -47,7 +47,7 @@ private:
 
 
 	double delT;
-
+	std::vector<std::string> obstaclesType;
 
 public:
 	std::thread goal_worker_;
@@ -57,6 +57,7 @@ public:
 	void odom_cb(const nav_msgs::OdometryConstPtr& odom);
 	void state_cb(const mavros_msgs::State::ConstPtr& mavros_state);
 	void loadPath(std::string filename, int idx);
+	void loadObstacleType(const std::vector<std::string> &_obstaclesType);
 	void setInitialPosition();
 	void run();
 	void takeoff();

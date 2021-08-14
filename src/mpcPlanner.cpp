@@ -140,14 +140,32 @@ std::vector<pose> mpcPlanner::getTrajectory(const VariablesGrid &xd, int start_i
 	return mpc_trajectory;
 }
 
-pose mpcPlanner::getAvoidanceTarget(int start_idx, const obstacle &ob){
-	double min_dist_thresh = 1.5;
+pose mpcPlanner::getClosestObstaclePose(int start_idx, const obstacle &ob){
+	double distance_change = 0;
+	int count_idx = start_idx;
+	double current_distance = 0; double prev_distance = 0;
+	while (distance_change >= 0){
+		pose p = this->ref_trajectory[count_idx];
+		current_distance = getDistance(pose(p.x, p.y, ob.z), pose(ob.x, ob.y, ob.z));
+		distance_change = current_distance - prev_distance;
+		++count_idx;
+		prev_distance = current_distance;
+	}
+	return this->ref_trajectory[count_idx];
+}
+
+pose mpcPlanner::getAvoidanceTarget(int start_idx, const obstacle &ob){ // TODO
+	double min_dist_thresh = 3.0;
 	for (int i=start_idx; i < this->ref_trajectory.size(); ++i){
 		pose p = this->ref_trajectory[i];
 		bool passObstacle = not (this->isObstacleFront(p, pose(ob.x, ob.y, ob.z)));
 		if (passObstacle){
-			double distance = getDistance(pose(p.x, p.y, ob.z), pose(ob.x, ob.y, ob.z));
+			pose p_closest = this->getClosestObstaclePose(start_idx, ob);
+			double distance = getDistance(p, p_closest);
 			if (distance > min_dist_thresh){
+				return p;
+			}
+			else if (i == this->ref_trajectory.size() - 1){
 				return p;
 			}
 		}
@@ -178,7 +196,7 @@ bool mpcPlanner::isObstacleFront(const pose &p, const pose &ob_p){
 }
 
 bool mpcPlanner::isMeetingObstacle(const DVector &currentStates, const std::vector<obstacle> &obstacles, int &obstacle_idx){
-	double distance_thresh = 3.0; int count_obstacle_idx = 0;
+	double distance_thresh = 5.0; int count_obstacle_idx = 0;
 	// 1. calculate distance to each obstacles
 	for (obstacle ob: obstacles){
 		double distance = getDistance(pose(currentStates(0), currentStates(1), currentStates(2)), pose(ob.x, ob.y, ob.z));

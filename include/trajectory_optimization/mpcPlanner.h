@@ -44,6 +44,7 @@ public:
 	VariablesGrid getReference(int start_idx);
 	VariablesGrid getReference(const pose &p);
 	std::vector<pose> getTrajectory(const VariablesGrid &xd, int start_idx);
+	pose getClosestObstaclePose(int start_idx, const obstacle &ob);
 	pose getAvoidanceTarget(int start_idx, const obstacle &ob);
 	bool isObstacleFront(const pose &p, const pose &ob_p);
 	bool isMeetingObstacle(const DVector &currentStates, const std::vector<obstacle> &obstacles, int &obstacle_idx);
