@@ -64,7 +64,7 @@ public:
 	void publishGoal();
 	void publishVisMsg();
 	bool isReach();
-	DVector getCurrentState();
+	DVector getCurrentState(double &currentYaw);
 	void modifyMPCGoal(const std::vector<pose> &mpc_trajectory, const VariablesGrid &xd);
 };
 

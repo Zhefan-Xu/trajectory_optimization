@@ -6,7 +6,7 @@ int main(int argc, char** argv){
 	ros::NodeHandle nh;
 	// std::string filename = "/home/zhefan/catkin_ws/src/trajectory_optimization/path/waypoint_maze_complete.txt"; int idx = 37; std::vector<std::string> obstaclesType {"person_walking", "person_walking_0"};
 	// std::string filename = "/home/zhefan/catkin_ws/src/trajectory_optimization/path/waypoint_box.txt"; int idx = 0; std::vector<std::string> obstaclesType {"person_walking", "person_walking_0"};
-	std::string filename = "/home/zhefan/catkin_ws/src/trajectory_optimization/path/waypoint_maze.txt"; int idx = 0; std::vector<std::string> obstaclesType {"person_walking", "person_walking_0"};
+	std::string filename = "/home/zhefan/catkin_ws/src/trajectory_optimization/path/waypoint_maze.txt"; int idx = 0;  std::vector<std::string> obstaclesType {"person_walking", "person_walking_0"};
 
 	double delT = 0.1;
 	mavrosTest mtest (nh, delT);

@@ -70,7 +70,7 @@ void mavrosTest::run(){
 	double res = 0.1; // map resolution
 	double xsize = 0.2; double ysize = 0.2; double zsize = 0.1; // Robot collision box size
 	int degree = 7; // polynomial degree
-	double velocityd = 1.0; // desired average velocity
+	double velocityd = 1.5; // desired average velocity
 	int diff_degree = 4; // Minimum snap (4), minimum jerk (3)
 	double perturb = 1; // Regularization term and also make PSD -> PD
 	// bool shortcut = true; // shortcut waypoints
@@ -86,10 +86,10 @@ void mavrosTest::run(){
 	int horizon = 20; // MPC horizon
 
 	double mass = 1.0; double k_roll = 1.0; double tau_roll = 1.0; double k_pitch = 1.0; double tau_pitch = 1.0; 
-	double T_max = 3 * 9.8; double roll_max = PI_const/6; double pitch_max = PI_const/6;
+	double T_max = 3.0 * 9.8; double roll_max = PI_const/6; double pitch_max = PI_const/6;
 
-
-	DVector currentStates = this->getCurrentState();
+	double currentYaw;
+	DVector currentStates = this->getCurrentState(currentYaw);
 	DVector nextStates;
 	std::vector<pose> mpc_trajectory;
 	VariablesGrid xd;
@@ -103,9 +103,9 @@ void mavrosTest::run(){
 	while (ros::ok()){
 		std::vector<obstacle> obstacles; d.detect(obstacles);
 		auto start_time = high_resolution_clock::now();
-		mpc_trajectory = dynamicPlanner(trajectory, obstacles, horizon, mass, k_roll, tau_roll, k_pitch, tau_pitch, T_max, roll_max, pitch_max, delT, currentStates, nextStates, xd);
-		currentStates = nextStates;
-		// currentStates = this->getCurrentState();
+		mpc_trajectory = dynamicPlanner(trajectory, obstacles, horizon, mass, k_roll, tau_roll, k_pitch, tau_pitch, T_max, roll_max, pitch_max, delT, currentStates, currentYaw, nextStates, xd);
+		// currentStates = nextStates;
+		currentStates = this->getCurrentState(currentYaw); currentStates(3) = nextStates(3); currentStates(4) = nextStates(4); currentStates(5) = nextStates(5); currentStates(6) = nextStates(6); currentStates(7) = nextStates(7);
 
 		auto end_time = high_resolution_clock::now();
 		auto duration_total = duration_cast<microseconds>(end_time - start_time);
@@ -201,7 +201,7 @@ bool mavrosTest::isReach(){
 	}
 }
 
-DVector mavrosTest::getCurrentState(){
+DVector mavrosTest::getCurrentState(double &currentYaw){
 	// TODO implement this
 	// convert odom to states
 	DVector currentStates(8); currentStates.setAll(0.0);
@@ -216,13 +216,13 @@ DVector mavrosTest::getCurrentState(){
 	// orientation:
 	double roll; double pitch; double yaw;
 	rpy_from_quaternion(this->current_odom.pose.pose.orientation, roll, pitch, yaw);
-	currentStates(6) = roll; currentStates(7) = pitch;
+	currentStates(6) = roll; currentStates(7) = pitch; currentYaw = yaw;
 	return currentStates;
 }
 
 void mavrosTest::modifyMPCGoal(const std::vector<pose> &mpc_trajectory, const VariablesGrid &xd){
 	// int forward_idx = 1;
-	// int forward_idx = 3;
+	// int forward_idx = 5;
 	int forward_idx = 10;
 	double yaw = mpc_trajectory[forward_idx].yaw;
 	DVector goalStates = xd.getVector(forward_idx);

@@ -20,6 +20,10 @@ struct pose{
     pose(double _x, double _y, double _z){
         x = _x; y = _y; _z = z; yaw = 0;
     }   
+
+    pose(double _x, double _y, double _z, double _yaw){
+        x = _x; y = _y; _z = z; yaw = _yaw;
+    }
 };
 
 struct obstacle{
