@@ -88,6 +88,37 @@ visualization_msgs::MarkerArray wrapVisMsg(const std::vector<pose> &path, double
 	return msg;
 }
 
+
+
+visualization_msgs::MarkerArray wrapWaypointMsg(const std::vector<pose> &path, double r=0, double g=0, double b=0){
+		visualization_msgs::MarkerArray msg;
+		std::vector<visualization_msgs::Marker> path_vis_array;
+		visualization_msgs::Marker waypoint;
+		for (int i=0; i < path.size(); ++i){
+
+				// waypoint
+				waypoint.header.frame_id = "map";
+				waypoint.id = 8888+i;
+				waypoint.type = visualization_msgs::Marker::SPHERE;
+				waypoint.pose.position.x = path[i].x;
+				waypoint.pose.position.y = path[i].y;
+				waypoint.pose.position.z = path[i].z;
+				waypoint.lifetime = ros::Duration(0.5);
+				waypoint.scale.x = 0.5;
+				waypoint.scale.y = 0.5;
+				waypoint.scale.z = 0.5;
+				waypoint.color.a = 0.8;
+				waypoint.color.r = r;
+				waypoint.color.g = g;
+				waypoint.color.b = b;
+
+				
+				path_vis_array.push_back(waypoint);
+			}
+			msg.markers = path_vis_array;
+	return msg;
+}
+
 nav_msgs::Path wrapPathMsg(const std::vector<pose> &path){
 	nav_msgs::Path msg;
 	std::vector<geometry_msgs::PoseStamped> poses;
@@ -130,6 +161,7 @@ visualization_msgs::MarkerArray wrapObstacleMsg(const std::vector<obstacle> &obs
 		m.color.r = 1.0;
 		m.color.g = 0.0;
 		m.color.b = 0.0;
+		m.lifetime = ros::Duration(0.5);
 		markers.push_back(m);
 	}
 	// cout << markers.size() << endl;

@@ -155,6 +155,14 @@ Visualization Manager:
         {}
       Queue Size: 100
       Value: false
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /waypoints
+      Name: MarkerArray
+      Namespaces:
+        "": true
+      Queue Size: 100
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -183,25 +191,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 34.7100715637207
+      Distance: 47.932918548583984
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -5.384948253631592
-        Y: 2.5897607803344727
-        Z: -1.8248322010040283
+        X: 2.5401337146759033
+        Y: 6.935941219329834
+        Z: -2.91828989982605
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.219796895980835
+      Pitch: 1.2597966194152832
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 3.023576021194458
+      Yaw: 6.256758213043213
     Saved: ~
 Window Geometry:
   Displays:

@@ -32,6 +32,7 @@ private:
 	ros::Publisher trajectory_vis_pub;
 	ros::Publisher mpc_trajectory_vis_pub;
 	ros::Publisher obstacle_vis_pub;
+	ros::Publisher waypoint_vis_pub;
 
 	ros::ServiceClient gazebo_setModel_client;
 	ros::ServiceClient arming_client;
@@ -43,6 +44,7 @@ private:
 	visualization_msgs::MarkerArray path_msg;
 	visualization_msgs::MarkerArray trajectory_msg;
 	visualization_msgs::MarkerArray obstacle_msg;
+	visualization_msgs::MarkerArray waypoint_msg;
 	nav_msgs::Path mpc_trajectory_msg;
 
 

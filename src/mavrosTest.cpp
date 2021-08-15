@@ -12,6 +12,7 @@ mavrosTest::mavrosTest(const ros::NodeHandle &_nh, double _delT=0.1):nh(_nh){
     trajectory_vis_pub = nh.advertise<visualization_msgs::MarkerArray>("/trajectory", 0);
     mpc_trajectory_vis_pub = nh.advertise<nav_msgs::Path>("/mpc_trajectory", 0);
     obstacle_vis_pub = nh.advertise<visualization_msgs::MarkerArray>("/obstacles", 0);
+ 	waypoint_vis_pub = nh.advertise<visualization_msgs::MarkerArray>("/waypoints", 0);
     
     // goal_pub = nh.advertise<geometry_msgs::PoseStamped>("/cerlab_uav/goal", 10);
 
@@ -38,6 +39,7 @@ void mavrosTest::state_cb(const mavros_msgs::State::ConstPtr& mavros_state){
 void mavrosTest::loadPath(std::string filename, int idx){
 	std::vector<std::vector<pose>> paths = read_waypoint_file(filename);
 	this->path = paths[idx];
+	waypoint_msg = wrapWaypointMsg(this->path, 1, 1, 0);
 } 
 
 void mavrosTest::loadObstacleType(const std::vector<std::string> &_obstaclesType){
@@ -184,6 +186,7 @@ void mavrosTest::publishVisMsg(){
         trajectory_vis_pub.publish(trajectory_msg);
         mpc_trajectory_vis_pub.publish(mpc_trajectory_msg);
         obstacle_vis_pub.publish(obstacle_msg);
+ 		waypoint_vis_pub.publish(waypoint_msg);
         rate.sleep();
 	}
 }
