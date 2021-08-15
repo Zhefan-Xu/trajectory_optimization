@@ -409,7 +409,7 @@ void mpcPlanner::optimize(const DVector &currentStates, double currentYaw, const
 	ocp.subjectTo( 0 <= sqrt(pow(vx, 2) + pow(vy, 2) + pow(vz, 2)) <= 2); // velocity constraint
 
 	// TODO: obstacle constraint:
-	double delta = 0.3; 
+	double delta = 0.01; 
 	double safe_dist = 2.0;
 	for (int t=0; t < this->horizon; ++t){
 		for (obstacle ob: obstacles){
