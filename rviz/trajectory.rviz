@@ -102,7 +102,7 @@ Visualization Manager:
       Marker Topic: /trajectory
       Name: MarkerArray
       Namespaces:
-        "": true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/Axes
@@ -129,7 +129,7 @@ Visualization Manager:
       Value: true
     - Class: octomap_rviz_plugin/OccupancyGrid
       Enabled: true
-      Max. Height Display: 3.4028234663852886e+38
+      Max. Height Display: 4
       Max. Octree Depth: 16
       Min. Height Display: 0.05000000074505806
       Name: OccupancyGrid
@@ -144,7 +144,7 @@ Visualization Manager:
       Marker Topic: /obstacles
       Name: MarkerArray
       Namespaces:
-        obstacles: true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -160,7 +160,7 @@ Visualization Manager:
       Marker Topic: /waypoints
       Name: MarkerArray
       Namespaces:
-        "": true
+        {}
       Queue Size: 100
       Value: true
   Enabled: true
@@ -191,7 +191,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 47.932918548583984
+      Distance: 30.379837036132812
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -206,10 +206,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.2597966194152832
+      Pitch: 0.40979766845703125
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 6.256758213043213
+      Yaw: 4.766761779785156
     Saved: ~
 Window Geometry:
   Displays:
