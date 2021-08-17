@@ -1,4 +1,11 @@
-# trajectory_optimization
-#### Implementation of polynomial trajectory optimization.
+# Trajectory Optimization
+TODO
 
-#### Time optimization
+## DEMO
+TODO
+
+## Installation
+TODO
+
+## How to Use
+TODO
