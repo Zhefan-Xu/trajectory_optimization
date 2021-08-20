@@ -5,7 +5,7 @@ TODO
 TODO
 
 ## Prerequsite
-TODO
+Please install [cerlab_uav](https://github.com/Zhefan-Xu/cerlab_uav) for simulation environments.
 
 ## Installation
 TODO
