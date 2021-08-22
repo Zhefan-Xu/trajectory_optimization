@@ -5,8 +5,11 @@ TODO
 TODO
 
 ## Prerequsite
-Please follow [PX4 Gazebo](https://docs.px4.io/master/en/simulation/gazebo.html) to install the vehicle model, and make it compatible with your current ROS.
+Please follow [PX4 Gazebo](https://docs.px4.io/master/en/dev_setup/dev_env_linux_ubuntu.html#ros-gazebo) to install the vehicle model, and make it compatible with your current ROS.
+```
+git clone https://github.com/PX4/PX4-Autopilot.git --recursive
 
+```
 Please install [cerlab_uav](https://github.com/Zhefan-Xu/cerlab_uav) for simulation environments.
 
 ## Installation
