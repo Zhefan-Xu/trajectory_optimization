@@ -17,7 +17,17 @@ add the following script to ```~/.bashrc```
 source Tools/setup_gazebo.bash $<PX4-Autopilot_clone> $<PX4-Autopilot_clone>/build/px4_sitl_default
 export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:<PX4-Autopilot_clone>
 export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:<PX4-Autopilot_clone>/Tools/sitl_gazebo
+```
 
+Also, install the [drone_gazebo](https://github.com/Zhefan-Xu/drone_gazebo) and the official [gazebo_models](https://github.com/osrf/gazebo_models) for gazebo models:
+```
+cd ~/catkin_ws
+git clone https://github.com/Zhefan-Xu/drone_gazebo
+cd path/to/save/gazebo_models
+git clone https://github.com/osrf/gazebo_models
+```
+add the following to the ```~/.bashrc```
+```
 export GAZEBO_MODEL_PATH=$GAZEBO_MODEL_PATH:~/catkin_ws/src/drone_gazebo/models
 export GAZEBO_MODEL_PATH=$GAZEBO_MODEL_PATH:path/to/gazebo_models
 ```
