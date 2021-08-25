@@ -17,6 +17,9 @@ add the following script to ```~/.bashrc```
 source Tools/setup_gazebo.bash $<PX4-Autopilot_clone> $<PX4-Autopilot_clone>/build/px4_sitl_default
 export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:<PX4-Autopilot_clone>
 export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:<PX4-Autopilot_clone>/Tools/sitl_gazebo
+
+export GAZEBO_MODEL_PATH=$GAZEBO_MODEL_PATH:~/catkin_ws/src/drone_gazebo/models
+export GAZEBO_MODEL_PATH=$GAZEBO_MODEL_PATH:path/to/gazebo_models
 ```
 
 Please install [cerlab_uav](https://github.com/Zhefan-Xu/cerlab_uav) for simulation environments.
