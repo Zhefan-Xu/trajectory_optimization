@@ -406,7 +406,7 @@ void mpcPlanner::optimize(const DVector &currentStates, double currentYaw, const
 	ocp.subjectTo( -this->pitch_max <= pitch_d <= this->pitch_max );
 	ocp.subjectTo( -this->roll_max <= roll <= this->roll_max );
 	ocp.subjectTo( -this->pitch_max <= pitch <= this->pitch_max );
-	ocp.subjectTo( 0 <= sqrt(pow(vx, 2) + pow(vy, 2) + pow(vz, 2)) <= 2); // velocity constraint
+	// ocp.subjectTo( 0 <= sqrt(pow(vx, 2) + pow(vy, 2) + pow(vz, 2)) <= 2); // velocity constraint
 
 	// TODO: obstacle constraint:
 	double delta = 0.01; 
