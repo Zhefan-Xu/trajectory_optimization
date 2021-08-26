@@ -33,6 +33,9 @@ export GAZEBO_MODEL_PATH=$GAZEBO_MODEL_PATH:path/to/gazebo_models
 ```
 
 Please install [cerlab_uav](https://github.com/Zhefan-Xu/cerlab_uav) for simulation environments.
+```
+git clone https://github.com/Zhefan-Xu/cerlab_uav
+```
 
 ## Installation
 TODO
