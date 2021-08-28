@@ -454,7 +454,8 @@ void polyTraj::optimize(){
 	this->z_param_sol = z_param;
 
 	auto end_time = high_resolution_clock::now();
-	auto duration_total = duration_cast<microseconds>(end_time - start_time);
+	auto duration_total = duration_cast<microseconds>(end_time - start_time); 
+
 	cout << "[PolyTraj INFO]: " <<   "solve time: "<< duration_total.count()/1e6 << " seconds. " << endl;
 	cout << "[PolyTraj INFO]: " << "f0: " << 2 * (min_result_x + min_result_y + min_result_z) << endl;
 }

@@ -331,7 +331,7 @@ void mpcPlanner::optimize(const DVector &currentStates, DVector &nextStates, std
 	nextStates = xd.getVector(1);
 }
 
-void mpcPlanner::optimize(const DVector &currentStates, double currentYaw, const std::vector<obstacle> &obstacles, DVector &nextStates, std::vector<pose> &mpc_trajectory, VariablesGrid &xd){ 
+int mpcPlanner::optimize(const DVector &currentStates, double currentYaw, const std::vector<obstacle> &obstacles, DVector &nextStates, std::vector<pose> &mpc_trajectory, VariablesGrid &xd){ 
 	DifferentialState x;
 	DifferentialState y;
 	DifferentialState z;
@@ -375,7 +375,7 @@ void mpcPlanner::optimize(const DVector &currentStates, double currentYaw, const
 	VariablesGrid r;
 
 	int obstacle_idx = -1;
-	bool meetObstacle = this->isMeetingObstacle(currentStates, currentYaw, obstacles, obstacle_idx); 
+	bool meetObstacle = this->isMeetingObstacle(currentStates, currentYaw, obstacles, obstacle_idx);
 	if (meetObstacle){
 		cout << "[MPC INFO]: " << "FACING OBSTACLE!!!!!!!" << endl;	
 		int target_idx;
@@ -406,7 +406,10 @@ void mpcPlanner::optimize(const DVector &currentStates, double currentYaw, const
 	ocp.subjectTo( -this->pitch_max <= pitch_d <= this->pitch_max );
 	ocp.subjectTo( -this->roll_max <= roll <= this->roll_max );
 	ocp.subjectTo( -this->pitch_max <= pitch <= this->pitch_max );
-	// ocp.subjectTo( 0 <= sqrt(pow(vx, 2) + pow(vy, 2) + pow(vz, 2)) <= 2); // velocity constraint
+	// ocp.subjectTo( 0 <= sqrt(pow(vx, 2) + pow(vy, 2) + pow(vz, 2)) <= 4); // velocity constraint
+	ocp.subjectTo( -2 <= vx <= 2);
+	ocp.subjectTo( -2 <= vy <= 2);
+	ocp.subjectTo( -2 <= vz <= 2);
 
 	// TODO: obstacle constraint:
 	double delta = 0.01; 
@@ -414,8 +417,11 @@ void mpcPlanner::optimize(const DVector &currentStates, double currentYaw, const
 	for (int t=0; t < this->horizon; ++t){
 		for (obstacle ob: obstacles){
 			obstacle pred_ob = this->predictObstacleState(ob, t);
-			ocp.subjectTo(t,   sqrt(pow((x-pred_ob.x), 2)/pow(pred_ob.xsize/2, 2) + pow((y-pred_ob.y), 2)/pow(pred_ob.ysize/2, 2) + pow((z-pred_ob.z), 2)/pow(pred_ob.zsize/2,2)) -1
-			               >= safe_dist ) ; // without probability
+			double obstacle_distance = getDistance(pred_ob, pose(currentStates(0), currentStates(1), currentStates(2)));
+			if (obstacle_distance < 5.0){
+				ocp.subjectTo(t,   sqrt(pow((x-pred_ob.x), 2)/pow(pred_ob.xsize/2, 2) + pow((y-pred_ob.y), 2)/pow(pred_ob.ysize/2, 2) + pow((z-pred_ob.z), 2)/pow(pred_ob.zsize/2,2)) -1
+				               >= safe_dist ) ; // without probability
+			}
 			// ocp.subjectTo(t, sqrt(pow((x-pred_ob.x), 2)/pow(pred_ob.xsize/2, 2) + pow((y-pred_ob.y), 2)/pow(pred_ob.ysize/2, 2) + pow((z-pred_ob.z), 2)/pow(pred_ob.zsize/2,2)) -1
 			//             - my_erfinvf(1-2*delta) * sqrt(2 * (pred_ob.varX*pow(x-pred_ob.x, 2)/pow(pred_ob.xsize/2, 4) + 
 			//                								pred_ob.varY*pow(y-pred_ob.y, 2)/pow(pred_ob.ysize/2, 4) + // with probability
@@ -435,6 +441,7 @@ void mpcPlanner::optimize(const DVector &currentStates, double currentYaw, const
 	mpc_trajectory = this->getTrajectory(xd, start_idx);
 	nextStates = xd.getVector(1);
 	clearAllStaticCounters();
+	return obstacle_idx;
 }
 
 

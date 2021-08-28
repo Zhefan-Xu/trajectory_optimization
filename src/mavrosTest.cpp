@@ -63,6 +63,7 @@ void mavrosTest::setInitialPosition(){
 void mavrosTest::run(){
 	goal_worker_ = std::thread(&mavrosTest::publishGoal, this);
 	vis_worker_ = std::thread(&mavrosTest::publishVisMsg, this);
+	// bool write_file = false;
 
 	// takeoff at the first given point attitude:
 	this->takeoff();
@@ -79,8 +80,19 @@ void mavrosTest::run(){
 	bool shortcut = false; // shortcut waypoints
 	std::vector<pose> loadPath;
 
+
 	// solve trajectory:
+	int num_run = 19;
+	// std::ofstream static_planner_data; std::string static_filename = "/home/zhefan/Desktop/experiment_data/static/static" + std::to_string(num_run) +".txt";
+	// static_planner_data.open(static_filename);
+	auto start_time_static = high_resolution_clock::now();
 	std::vector<pose> trajectory = staticPlanner(nh, res, xsize, ysize, zsize, degree, velocityd, diff_degree, perturb, path, shortcut, delT, loadPath);
+	auto end_time_static = high_resolution_clock::now();
+	auto duration_total_static = duration_cast<microseconds>(end_time_static - start_time_static);
+	cout << "Total: "<< duration_total_static.count()/1e6 << " seconds. " << endl;	
+	// if (write_file){
+	// 	static_planner_data << duration_total_static.count()/1e6 << endl;
+	// }
 	path_msg = wrapVisMsg(loadPath, 0, 0, 0);
 	trajectory_msg = wrapVisMsg(trajectory, 0, 1, 0);
 
@@ -102,18 +114,41 @@ void mavrosTest::run(){
 	d.loadObstacleType(obstaclesType);
 
 	ros::Rate rate(1/this->delT);
+	// std::ofstream dynamic_planner_data; std::string dynamic_filename = "/home/zhefan/Desktop/experiment_data/dynamic/dynamic" + std::to_string(num_run) +".txt";
+	// std::ofstream dynamic_planner_obstacle_data; std::string dynamic_obstacle_filename = "/home/zhefan/Desktop/experiment_data/dynamic_obstacle/dynamic_obstacle" + std::to_string(num_run) +".txt";
+	// std::ofstream obstacle_distance_data; std::string obstacle_distance_filename = "/home/zhefan/Desktop/experiment_data/distance/distance" + std::to_string(num_run) +".txt";
+	// if (write_file){
+	// 	dynamic_planner_data.open(dynamic_filename);
+	// 	dynamic_planner_obstacle_data.open(dynamic_obstacle_filename);
+	// 	obstacle_distance_data.open(obstacle_distance_filename);
+	// }
 	while (ros::ok()){
 		std::vector<obstacle> obstacles; d.detect(obstacles);
 		auto start_time = high_resolution_clock::now();
-		mpc_trajectory = dynamicPlanner(trajectory, obstacles, horizon, mass, k_roll, tau_roll, k_pitch, tau_pitch, T_max, roll_max, pitch_max, delT, currentStates, currentYaw, nextStates, xd);
+		int obstacle_idx = -1;
+		mpc_trajectory = dynamicPlanner(trajectory, obstacles, horizon, mass, k_roll, tau_roll, k_pitch, tau_pitch, T_max, roll_max, pitch_max, delT, currentStates, currentYaw, nextStates, xd, obstacle_idx);
 		// currentStates = nextStates;
 		currentStates = this->getCurrentState(currentYaw); currentStates(3) = nextStates(3); currentStates(4) = nextStates(4); currentStates(5) = nextStates(5); currentStates(6) = nextStates(6); currentStates(7) = nextStates(7);
 
 		auto end_time = high_resolution_clock::now();
 		auto duration_total = duration_cast<microseconds>(end_time - start_time);
 		cout << "Total: "<< duration_total.count()/1e6 << " seconds. " << endl;		
+		// if (write_file){
+		// 	if (obstacle_idx != -1){
+		// 		dynamic_planner_obstacle_data << duration_total.count()/1e6 << endl;
 
+		// 	}
+		// 	else{
+		// 		dynamic_planner_data << duration_total.count()/1e6 << endl;
+		// 	}
+		
 
+		// 	double obstacle_distance = getDistance(obstacles[1], pose(currentStates(0), currentStates(1), currentStates(2)));
+		// 	if (obstacle_distance < 5){
+		// 		obstacle_distance_data << obstacle_distance << endl;
+		// 	}
+
+		// }
 		this->modifyMPCGoal(mpc_trajectory, xd);
 		mpc_trajectory_msg = wrapPathMsg(mpc_trajectory);
 

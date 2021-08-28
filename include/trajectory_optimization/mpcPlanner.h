@@ -51,7 +51,7 @@ public:
 	bool isMeetingObstacle(const DVector &currentStates, double currentYaw, const std::vector<obstacle> &obstacles, int &obstacle_idx);
 	RealTimeAlgorithm constructOptimizer(const DVector &currentStates);
 	void optimize(const DVector &currentStates, DVector &nextStates, std::vector<pose> &mpc_trajectory, VariablesGrid &xd);
-	void optimize(const DVector &currentStates, double currentYaw, const std::vector<obstacle> &obstacles, DVector &nextStates, std::vector<pose> &mpc_trajectory, VariablesGrid &xd);
+	int optimize(const DVector &currentStates, double currentYaw, const std::vector<obstacle> &obstacles, DVector &nextStates, std::vector<pose> &mpc_trajectory, VariablesGrid &xd);
 	obstacle predictObstacleState(const obstacle &ob, int t);
 };
 
