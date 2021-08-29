@@ -36,6 +36,11 @@ Please install [cerlab_uav](https://github.com/Zhefan-Xu/cerlab_uav) for simulat
 ```
 git clone https://github.com/Zhefan-Xu/cerlab_uav
 ```
+Build all above packages
+```
+cd ~/catkin_ws
+catkin_make
+```
 
 ## Installation
 TODO
