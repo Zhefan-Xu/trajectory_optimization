@@ -43,7 +43,9 @@ catkin_make
 ```
 
 ## Installation
-TODO
+
+Please install Acado Toolkit, Quadprog++.
+
 
 ## How to Use
 TODO
