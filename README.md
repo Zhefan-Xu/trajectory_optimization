@@ -44,7 +44,7 @@ catkin_make
 
 ## Installation
 
-Please install [Acado Toolkit](https://acado.github.io/), Quadprog++.
+Please install [Acado Toolkit](https://acado.github.io/), [Quadprog++](https://github.com/liuq/QuadProgpp).
 
 
 ## How to Use
