@@ -2,7 +2,7 @@
 TODO
 
 ## DEMO
-TODO
+Please watch the Youtube Video for all experiments.
 
 ## Prerequsite
 Please follow [PX4 Gazebo](https://docs.px4.io/master/en/dev_setup/dev_env_linux_ubuntu.html#ros-gazebo) to install the vehicle model, and make it compatible with your current ROS.
@@ -36,9 +36,16 @@ Please install [cerlab_uav](https://github.com/Zhefan-Xu/cerlab_uav) for simulat
 ```
 git clone https://github.com/Zhefan-Xu/cerlab_uav
 ```
+Build all above packages
+```
+cd ~/catkin_ws
+catkin_make
+```
 
 ## Installation
-TODO
+
+Please install [Acado Toolkit](https://acado.github.io/), [Quadprog++](https://github.com/liuq/QuadProgpp).
+
 
 ## How to Use
 TODO
