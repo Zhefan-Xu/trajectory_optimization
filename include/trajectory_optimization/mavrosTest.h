@@ -14,6 +14,8 @@
 #include <trajectory_optimization/staticPlanner.h>
 #include <trajectory_optimization/dynamicPlanner.h>
 #include <trajectory_optimization/vis_utils.h>
+#include <tf/transform_listener.h>
+#include <geometry_msgs/Vector3Stamped.h>
 #include <thread>
 #include <mutex>
 
@@ -26,6 +28,8 @@ private:
 
 	ros::Subscriber odom_sub;
 	ros::Subscriber state_sub;
+	tf::TransformListener tf_listener;
+
 
 	ros::Publisher goal_pub;
 	ros::Publisher path_vis_pub;

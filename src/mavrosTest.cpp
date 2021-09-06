@@ -100,8 +100,9 @@ void mavrosTest::run(){
 	int horizon = 20; // MPC horizon
 
 	double mass = 1.0; double k_roll = 1.0; double tau_roll = 1.0; double k_pitch = 1.0; double tau_pitch = 1.0; 
-	double T_max = 3.0 * 9.8; double roll_max = PI_const/6; double pitch_max = PI_const/6;
+	double T_max = 2.0 * 9.8; double roll_max = PI_const/6; double pitch_max = PI_const/6;
 
+	
 	double currentYaw;
 	DVector currentStates = this->getCurrentState(currentYaw);
 	DVector nextStates;
@@ -128,7 +129,9 @@ void mavrosTest::run(){
 		int obstacle_idx = -1;
 		mpc_trajectory = dynamicPlanner(trajectory, obstacles, horizon, mass, k_roll, tau_roll, k_pitch, tau_pitch, T_max, roll_max, pitch_max, delT, currentStates, currentYaw, nextStates, xd, obstacle_idx);
 		// currentStates = nextStates;
-		currentStates = this->getCurrentState(currentYaw); currentStates(3) = nextStates(3); currentStates(4) = nextStates(4); currentStates(5) = nextStates(5); currentStates(6) = nextStates(6); currentStates(7) = nextStates(7);
+		currentStates = this->getCurrentState(currentYaw); 
+		// currentStates(3) = nextStates(3); currentStates(4) = nextStates(4); currentStates(5) = nextStates(5); 
+		currentStates(6) = nextStates(6); currentStates(7) = nextStates(7);
 
 		auto end_time = high_resolution_clock::now();
 		auto duration_total = duration_cast<microseconds>(end_time - start_time);
@@ -163,7 +166,7 @@ void mavrosTest::run(){
 void mavrosTest::takeoff(){
 	bool takeoff = false;
 	goal.position.x = this->path[0].x; goal.position.y = this->path[0].y; goal.position.z = this->path[0].z;
-	goal.yaw = this->path[0].yaw; goal.coordinate_frame = 1; 
+	goal.yaw = this->path[0].yaw; goal.coordinate_frame = goal.FRAME_LOCAL_NED; goal.header.frame_id = "map";
 
 	ros::Rate rate(1/this->delT);
 	while (takeoff == false){
@@ -209,6 +212,7 @@ void mavrosTest::publishGoal(){
         }
 		goal.header.stamp = ros::Time::now();
 		goal_pub.publish(goal);
+		// cout << "[PUBLISHED GOAL INFO]: " << goal.position.x << " " << goal.position.y << " " << goal.position.z << endl;
 		ros::spinOnce();
 		rate.sleep();
 	}
@@ -249,12 +253,23 @@ DVector mavrosTest::getCurrentState(double &currentYaw){
 
 	// velocity:
 	// TODO: coordinate transform 
+	std::string body_frame = this->current_odom.child_frame_id; std::string map_frame = this->current_odom.header.frame_id;
+	double vx_body = this->current_odom.twist.twist.linear.x; double vy_body = this->current_odom.twist.twist.linear.y; double vz_body = this->current_odom.twist.twist.linear.z; 
+	geometry_msgs::Vector3Stamped velocity_body; 
+	velocity_body.header.frame_id = body_frame;
+	velocity_body.vector.x = vx_body; velocity_body.vector.y = vy_body; velocity_body.vector.z = vz_body;
+	geometry_msgs::Vector3Stamped velocity_map;
+	tf_listener.transformVector(map_frame, velocity_body, velocity_map);
+	currentStates(4) = velocity_map.vector.x; currentStates(5) = velocity_map.vector.y; currentStates(6) = velocity_map.vector.z;
+	// cout << "[Velocity Before: ]" << velocity_body.vector.x << " " << velocity_body.vector.y << " " << velocity_body.vector.z << endl;
+	// cout << "[Velocity Transformed: ]" << velocity_map.vector.x << " " << velocity_map.vector.y << " " << velocity_map.vector.z << endl;
+
 	// listen to tf and apply the transform
 
 	// orientation:
 	double roll; double pitch; double yaw;
 	rpy_from_quaternion(this->current_odom.pose.pose.orientation, roll, pitch, yaw);
-	currentStates(6) = roll; currentStates(7) = pitch; currentYaw = yaw;
+	currentStates(6) = roll; currentStates(7) = pitch;  currentYaw = yaw;
 	return currentStates;
 }
 
@@ -262,11 +277,19 @@ void mavrosTest::modifyMPCGoal(const std::vector<pose> &mpc_trajectory, const Va
 	// int forward_idx = 1;
 	// int forward_idx = 5;
 	int forward_idx = 10;
+	// goal.type_mask =  goal.IGNORE_VX + goal.IGNORE_VY + goal.IGNORE_VZ
+	// 				+ goal.IGNORE_AFX + goal.IGNORE_AFY + goal.IGNORE_AFZ
+	// 				+ goal.IGNORE_YAW_RATE;
+	goal.type_mask =  goal.IGNORE_AFX + goal.IGNORE_AFY + goal.IGNORE_AFZ
+					+ goal.IGNORE_YAW_RATE;
 	double yaw = mpc_trajectory[forward_idx].yaw;
 	DVector goalStates = xd.getVector(forward_idx);
 	goal.position.x = goalStates(0); goal.position.y = goalStates(1); goal.position.z = goalStates(2);
 	// goal.velocity.x = goalStates(3); goal.velocity.y = goalStates(4); goal.velocity.z = goalStates(5);
 	// cout << goalStates << endl;
 	goal.yaw = yaw; // goal.type_mask = 8 + 16 + 32 + 64 + 128 + 256 + 2048;
-	goal.type_mask =  8 + 16 +  32 + 64 + 128 + 256 + 2048;
+	// goal.type_mask =  8 + 16 +  32 + 64 + 128 + 256 + 2048;
+	// cout << "TYPE MASK: " << goal.type_mask << endl;
+	// cout << "[GOAL TARGET INFO]: " << goal.position.x << " " << goal.position.y << " " << goal.position.z << endl;
+	// cout << "[GOAL TARGET INFO]: " << goal.velocity.x << " " << goal.velocity.y << " " << goal.velocity.z << endl;
 }

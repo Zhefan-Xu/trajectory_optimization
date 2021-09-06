@@ -340,11 +340,13 @@ int mpcPlanner::optimize(const DVector &currentStates, double currentYaw, const 
 	DifferentialState vz;
 	DifferentialState roll;
 	DifferentialState pitch;
-	double yaw = 0;
+	// DifferentialState yaw;
+	double yaw = currentYaw;
 
 	Control T;
 	Control roll_d;
 	Control pitch_d;
+	// Control yaw_rate_d;
 
 	// MODEL Definition
 	DifferentialEquation f;
@@ -356,6 +358,7 @@ int mpcPlanner::optimize(const DVector &currentStates, double currentYaw, const 
 	f << dot(vz) == T*cos(roll)*cos(pitch) - this->g;
 	f << dot(roll) == (1.0/this->tau_roll) * (this->k_roll * roll_d - roll);
 	f << dot(pitch) == (1.0/this->tau_pitch) * (this->k_pitch * pitch_d - pitch);
+	// f << dot(yaw) == yaw_rate_d;
 
 	// Least Square Function
 	Function h;
@@ -406,6 +409,7 @@ int mpcPlanner::optimize(const DVector &currentStates, double currentYaw, const 
 	ocp.subjectTo( -this->pitch_max <= pitch_d <= this->pitch_max );
 	ocp.subjectTo( -this->roll_max <= roll <= this->roll_max );
 	ocp.subjectTo( -this->pitch_max <= pitch <= this->pitch_max );
+	
 	// ocp.subjectTo( 0 <= sqrt(pow(vx, 2) + pow(vy, 2) + pow(vz, 2)) <= 4); // velocity constraint
 	ocp.subjectTo( -2 <= vx <= 2);
 	ocp.subjectTo( -2 <= vy <= 2);
