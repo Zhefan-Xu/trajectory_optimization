@@ -45,7 +45,16 @@ catkin_make
 ## Installation
 
 Please install [Acado Toolkit](https://acado.github.io/), [Quadprog++](https://github.com/liuq/QuadProgpp).
-
+For  [Acado Toolkit](https://acado.github.io/), please follow the scritps:
+```
+cd path/to/packages
+git clone https://github.com/acado/acado.git -b stable ACADOtoolkit
+cd ACADOtoolkit
+mkdir build
+cd build
+cmake ..
+make
+```
 
 ## How to Use
 TODO
