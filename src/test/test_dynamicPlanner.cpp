@@ -14,9 +14,12 @@ int main(int argc, char** argv){
 	std::vector<std::vector<pose>> paths = read_waypoint_file(filename);
 	std::vector<pose> path = paths[30];
 
-	// parameters
 	double res = 0.1; // map resolution
 	double xsize = 0.2; double ysize = 0.2; double zsize = 0.1; // Robot collision box size
+	mapModule* mapModuleOctomap = new mapModule (nh, res, xsize, ysize, zsize);
+	mapModuleOctomap->updateMap();
+
+	// parameters
 	int degree = 7; // polynomial degree
 	double velocityd = 1; // desired average velocity
 	int diff_degree = 4; // Minimum snap (4), minimum jerk (3)
@@ -26,7 +29,7 @@ int main(int argc, char** argv){
 	std::vector<pose> loadPath;
 
 	// solve trajectory:
-	std::vector<pose> trajectory = staticPlanner(nh, res, xsize, ysize, zsize, degree, velocityd, diff_degree, perturb, path, shortcut, delT, loadPath);
+	std::vector<pose> trajectory = staticPlanner(mapModuleOctomap, degree, velocityd, diff_degree, perturb, path, shortcut, delT, loadPath);
 	
 
 	// MPC
@@ -48,12 +51,12 @@ int main(int argc, char** argv){
 	DVector currentStates(8); currentStates.setAll(0.0);
 	currentStates(0) = trajectory[0].x; currentStates(1) = trajectory[0].y; currentStates(2) = trajectory[0].z; 
 	DVector nextStates; std::vector<pose> mpc_trajectory;
-
+	double currentYaw = 0;
 	while (ros::ok()){
 		VariablesGrid xd;
 		std::vector<obstacle> obstacles;
 		auto start_time = high_resolution_clock::now();
-		mpc_trajectory = dynamicPlanner(trajectory, obstacles, horizon, mass, k_roll, tau_roll, k_pitch, tau_pitch, T_max, roll_max, pitch_max, delT, currentStates, nextStates, xd);
+		mpc_trajectory = dynamicPlanner(trajectory, obstacles, horizon, mass, k_roll, tau_roll, k_pitch, tau_pitch, T_max, roll_max, pitch_max, delT, currentStates, currentYaw, nextStates, xd);
 		currentStates = nextStates; 
 		auto end_time = high_resolution_clock::now();
 		auto duration_total = duration_cast<microseconds>(end_time - start_time);

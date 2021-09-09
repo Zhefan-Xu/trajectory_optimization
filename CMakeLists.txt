@@ -123,7 +123,7 @@ include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   "/usr/local/include/QuadProg++"
-  "/home/zhefan/Packages/ACADOtoolkit"
+  SYSTEM PUBLIC "/home/zhefan/Packages/ACADOtoolkit"
   "/home/zhefan/Packages/ACADOtoolkit/acado"
   "/home/zhefan/Packages/ACADOtoolkit/acado/utils"
 )
@@ -155,8 +155,6 @@ add_executable(test_mapModuleOctomap src/test/test_mapModuleOctomap.cpp)
 add_executable(test_timeOptimizer src/test/test_timeOptimizer.cpp)
 add_executable(test_staticPlanner src/test/test_staticPlanner.cpp)
 add_executable(test_acado src/test/test_acado.cpp)
-add_executable(test_mpcPlanner src/test/test_mpcPlanner.cpp)
-add_executable(test_gazeboTrajectory src/test/test_gazeboTrajectory.cpp)
 add_executable(test_mavros_node src/test/test_mavros_node.cpp)
 add_executable(test_detector src/test/test_detector.cpp)
 add_executable(test_dynamicPlanner src/test/test_dynamicPlanner.cpp)
@@ -189,8 +187,6 @@ target_link_libraries(test_timeOptimizer ${catkin_LIBRARIES} mapModuleOctomap po
 target_link_libraries(test_staticPlanner ${catkin_LIBRARIES} mapModuleOctomap polyTrajGen)
 target_link_libraries(test_acado ${catkin_LIBRARIES} "/home/zhefan/Packages/ACADOtoolkit/build/lib/libacado_toolkit_s.so")
 target_link_libraries(mpcPlanner "/home/zhefan/Packages/ACADOtoolkit/build/lib/libacado_toolkit_s.so")
-target_link_libraries(test_mpcPlanner ${catkin_LIBRARIES} mpcPlanner polyTrajGen mapModuleOctomap)
-target_link_libraries(test_gazeboTrajectory ${catkin_LIBRARIES} mpcPlanner polyTrajGen mapModuleOctomap)
 target_link_libraries(test_mavros_node ${catkin_LIBRARIES} mavrosTest)
 target_link_libraries(test_detector ${catkin_LIBRARIES} fakeDetector)
 target_link_libraries(test_dynamicPlanner ${catkin_LIBRARIES} mpcPlanner polyTrajGen mapModuleOctomap)

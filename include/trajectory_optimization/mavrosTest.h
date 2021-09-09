@@ -11,6 +11,7 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <trajectory_optimization/readfile.h>
 #include <trajectory_optimization/mpcPlanner.h>
+#include <trajectory_optimization/mapModuleOctomap.h>
 #include <trajectory_optimization/staticPlanner.h>
 #include <trajectory_optimization/dynamicPlanner.h>
 #include <trajectory_optimization/vis_utils.h>
@@ -29,7 +30,6 @@ private:
 	ros::Subscriber odom_sub;
 	ros::Subscriber state_sub;
 	tf::TransformListener tf_listener;
-
 
 	ros::Publisher goal_pub;
 	ros::Publisher path_vis_pub;
@@ -50,7 +50,6 @@ private:
 	visualization_msgs::MarkerArray obstacle_msg;
 	visualization_msgs::MarkerArray waypoint_msg;
 	nav_msgs::Path mpc_trajectory_msg;
-
 
 	double delT;
 	std::vector<std::string> obstaclesType;

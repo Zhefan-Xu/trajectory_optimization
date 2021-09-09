@@ -13,9 +13,13 @@ int main(int argc, char** argv){
 	std::vector<std::vector<pose>> paths = read_waypoint_file(filename);
 	std::vector<pose> path = paths[38];
 
-	// parameters
+	// map
 	double res = 0.1; // map resolution
 	double xsize = 0.2; double ysize = 0.2; double zsize = 0.1; // Robot collision box size
+	mapModule* mapModuleOctomap = new mapModule (nh, res, xsize, ysize, zsize);
+	mapModuleOctomap->updateMap();
+
+	// parameters
 	int degree = 7; // polynomial degree
 	double velocityd = 1; // desired average velocity
 	int diff_degree = 4; // Minimum snap (4), minimum jerk (3)
@@ -25,7 +29,7 @@ int main(int argc, char** argv){
 	std::vector<pose> loadPath;
 
 	// solve trajectory:
-	std::vector<pose> trajectory = staticPlanner(nh, res, xsize, ysize, zsize, degree, velocityd, diff_degree, perturb, path, shortcut, delT, loadPath);
+	std::vector<pose> trajectory = staticPlanner(mapModuleOctomap, degree, velocityd, diff_degree, perturb, path, shortcut, delT, loadPath);
 
 
 	// Visualization:

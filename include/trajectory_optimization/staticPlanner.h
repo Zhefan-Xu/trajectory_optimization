@@ -6,19 +6,16 @@
 #include <algorithm>
 
 
-std::vector<pose> staticPlanner(const ros::NodeHandle& nh, double res, double xsize, double ysize, double zsize,
-								int degree, double velocityd, int diff_degree, double perturb,
+std::vector<pose> staticPlanner(mapModule* mapModuleOctomap, int degree, double velocityd, int diff_degree, double perturb,
 								const std::vector<pose>& path, bool shortcut, double delT, std::vector<pose>& loadPath){
 	// TODO: implement the static planner
 
 	// Initialization:
 	polyTraj polytrajOptimizer (degree, velocityd, diff_degree, perturb);
-	mapModule mapModuleOctomap (nh, res, xsize, ysize, zsize);
 
-	mapModuleOctomap.updateMap();
 
 	if (shortcut){ // if we need to short cut path
-		loadPath = mapModuleOctomap.shortcutWaypointPath(path);
+		loadPath = mapModuleOctomap->shortcutWaypointPath(path);
 	}
 	else{
 		loadPath = path;
@@ -48,7 +45,7 @@ std::vector<pose> staticPlanner(const ros::NodeHandle& nh, double res, double xs
 			polytrajOptimizer.optimize();
 			trajectory = polytrajOptimizer.getTrajectory(delT);
 			collision_idx.clear();
-			valid = mapModuleOctomap.checkCollisionTrajectory(trajectory, collision_idx);
+			valid = mapModuleOctomap->checkCollisionTrajectory(trajectory, collision_idx);
 			if (valid){
 				break;
 			}

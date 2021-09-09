@@ -189,8 +189,6 @@ pose mpcPlanner::getAvoidanceTarget(int start_idx, const obstacle &ob, int &targ
 			double distance_traj = getDistance(p, p_closest);
 			double distance_ob = getDistance(pose(p.x, p.y, ob.z), pose(ob.x, ob.y, ob.z));
 			double distance = std::min(distance_traj, distance_ob);
-
-			// double distance = getDistance(pose(p.x, p.y, ob.z), pose(ob.x, ob.y, ob.z));
 			if (distance > min_dist_thresh){
 				target_idx = i;
 				return p;
@@ -243,93 +241,6 @@ bool mpcPlanner::isMeetingObstacle(const DVector &currentStates, double currentY
 }
 
 
-RealTimeAlgorithm mpcPlanner::constructOptimizer(const DVector &currentStates){
-	DifferentialState x;
-	DifferentialState y;
-	DifferentialState z;
-	DifferentialState vx;
-	DifferentialState vy;
-	DifferentialState vz;
-	DifferentialState roll;
-	DifferentialState pitch;
-	double yaw = 0;
-
-	Control T;
-	Control roll_d;
-	Control pitch_d;
-
-	// MODEL Definition
-	DifferentialEquation f;
-	f << dot(x) == vx;
-	f << dot(y) == vy;
-	f << dot(z) == vz;
-	f << dot(vx) == T*cos(roll)*sin(pitch)*cos(yaw) + T*sin(roll)*sin(yaw); 
-	f << dot(vy) == T*cos(roll)*sin(pitch)*sin(yaw) - T*sin(roll)*cos(yaw);
-	f << dot(vz) == T*cos(roll)*cos(pitch) - this->g;
-	f << dot(roll) == (1.0/this->tau_roll) * (this->k_roll * roll_d - roll);
-	f << dot(pitch) == (1.0/this->tau_pitch) * (this->k_pitch * pitch_d - pitch);
-
-	// Least Square Function
-	Function h;
-	h << x;
-	h << y;
-	h << z;
-
-	DMatrix Q(3,3);
-    Q.setIdentity(); Q(0,0) = 10.0; Q(1,1) = 10.0; Q(2,2) = 10.0; 
-	
-	// get tracking trajectory (future N seconds)
-	int start_idx = this->findNearestPoseIndex(currentStates);
-	// int start_idx = 0;
-
-	cout <<"[MPC INFO]: " << "start_idx: " << start_idx << endl;
-	VariablesGrid r = this->getReference(start_idx);
-
-	// setup OCP
-	OCP ocp(r);
-	ocp.minimizeLSQ(Q, h, r); // Objective
-
-	// Dynamic Constraint
-	ocp.subjectTo(f); 
-	// Control Constraints
-	ocp.subjectTo( 0 <= T <= this->T_max ); 
-	ocp.subjectTo( -this->roll_max <= roll_d <= this->roll_max );
-	ocp.subjectTo( -this->pitch_max <= pitch_d <= this->pitch_max );
-	ocp.subjectTo( -this->roll_max <= roll <= this->roll_max );
-	ocp.subjectTo( -this->pitch_max <= pitch <= this->pitch_max );
-
-	// Algorithm
-	RealTimeAlgorithm RTalgorithm(ocp, this->delT);
-	return RTalgorithm;
-}
-
-void mpcPlanner::optimize(const DVector &currentStates, DVector &nextStates, std::vector<pose> &mpc_trajectory, VariablesGrid &xd){
-	int start_idx;
-	if (this->first_time){
-		algorithm = this->constructOptimizer(currentStates);
-		this->first_time = false;
-	}
-	else{
-		start_idx = this->findNearestPoseIndex(currentStates);
-		VariablesGrid r = this->getReference(start_idx);
-		algorithm.setReference(r);
-	}
-
-	cout << "[MPC INFO]: " << "Start optimizing..." << endl;
-	algorithm.solve(0, currentStates);
-	cout << "[MPC INFO]: " << "Complete!" << endl;
-
-	// Get Solutions
-	// VariablesGrid xd, cd;
-	// VariablesGrid cd;
-	algorithm.getDifferentialStates(xd); // get solutions
-	// algorithm.getControls(cd);
-	// cout << xd << endl;
-	// cout << cd << endl;
-
-	mpc_trajectory = this->getTrajectory(xd, start_idx);
-	nextStates = xd.getVector(1);
-}
 
 int mpcPlanner::optimize(const DVector &currentStates, double currentYaw, const std::vector<obstacle> &obstacles, DVector &nextStates, std::vector<pose> &mpc_trajectory, VariablesGrid &xd){ 
 	DifferentialState x;
@@ -340,13 +251,11 @@ int mpcPlanner::optimize(const DVector &currentStates, double currentYaw, const 
 	DifferentialState vz;
 	DifferentialState roll;
 	DifferentialState pitch;
-	// DifferentialState yaw;
 	double yaw = currentYaw;
 
 	Control T;
 	Control roll_d;
 	Control pitch_d;
-	// Control yaw_rate_d;
 
 	// MODEL Definition
 	DifferentialEquation f;
@@ -358,7 +267,6 @@ int mpcPlanner::optimize(const DVector &currentStates, double currentYaw, const 
 	f << dot(vz) == T*cos(roll)*cos(pitch) - this->g;
 	f << dot(roll) == (1.0/this->tau_roll) * (this->k_roll * roll_d - roll);
 	f << dot(pitch) == (1.0/this->tau_pitch) * (this->k_pitch * pitch_d - pitch);
-	// f << dot(yaw) == yaw_rate_d;
 
 	// Least Square Function
 	Function h;
@@ -366,14 +274,11 @@ int mpcPlanner::optimize(const DVector &currentStates, double currentYaw, const 
 	h << y;
 	h << z;
 
-
-	// DMatrix Q(3+obstacles.size(),3+obstacles.size());
 	DMatrix Q(3, 3);
     Q.setIdentity(); Q(0,0) = 10.0; Q(1,1) = 10.0; Q(2,2) = 10.0; 
 	
 	// get tracking trajectory (future N seconds)
 	int start_idx = this->findNearestPoseIndex(currentStates);
-	// int start_idx = 0;
 
 	VariablesGrid r;
 
@@ -383,7 +288,6 @@ int mpcPlanner::optimize(const DVector &currentStates, double currentYaw, const 
 		cout << "[MPC INFO]: " << "FACING OBSTACLE!!!!!!!" << endl;	
 		int target_idx;
 		pose avoidanceTarget = this->getAvoidanceTarget(start_idx, obstacles[obstacle_idx], target_idx);
-		// r = this->getReference(avoidanceTarget);
 		double ratio = 0.5;
 		r = this->getReference(avoidanceTarget, target_idx, ratio);
 	}
@@ -397,20 +301,17 @@ int mpcPlanner::optimize(const DVector &currentStates, double currentYaw, const 
 	// setup OCP
 	OCP ocp(r);
 	ocp.minimizeLSQ(Q, h, r); // Objective
-	// ocp.minimizeLSQEndTerm( m, r.getLastVector() );
-	// cout << r.getLastVector() << endl;
 
 	// Dynamic Constraint
 	ocp.subjectTo(f); 
+	
 	// Control Constraints
-
 	ocp.subjectTo( 0 <= T <= this->T_max ); 
 	ocp.subjectTo( -this->roll_max <= roll_d <= this->roll_max );
 	ocp.subjectTo( -this->pitch_max <= pitch_d <= this->pitch_max );
 	ocp.subjectTo( -this->roll_max <= roll <= this->roll_max );
 	ocp.subjectTo( -this->pitch_max <= pitch <= this->pitch_max );
 	
-	// ocp.subjectTo( 0 <= sqrt(pow(vx, 2) + pow(vy, 2) + pow(vz, 2)) <= 4); // velocity constraint
 	ocp.subjectTo( -2 <= vx <= 2);
 	ocp.subjectTo( -2 <= vy <= 2);
 	ocp.subjectTo( -2 <= vz <= 2 );
@@ -439,7 +340,6 @@ int mpcPlanner::optimize(const DVector &currentStates, double currentYaw, const 
 	RealTimeAlgorithm RTalgorithm(ocp, this->delT);
 	cout << "[MPC INFO]: " << "Start optimizing..." << endl;
 	RTalgorithm.solve(0, currentStates);
-	// RTalgorithm.solve(0, r.getFirstVector());
 	cout << "[MPC INFO]: " << "Complete!" << endl;
 	RTalgorithm.getDifferentialStates(xd);
 	mpc_trajectory = this->getTrajectory(xd, start_idx);
@@ -448,10 +348,7 @@ int mpcPlanner::optimize(const DVector &currentStates, double currentYaw, const 
 	// get controls:
 	VariablesGrid cd;
 	RTalgorithm.getControls(cd);
-	cout << "[Desired States: ]" << xd.getVector(1) << endl;
-	cout << "[Controls: ]" << cd.getVector(0) << endl; 
 	clearAllStaticCounters();
-	return obstacle_idx;
 }
 
 
