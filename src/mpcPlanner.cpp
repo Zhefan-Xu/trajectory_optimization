@@ -3,9 +3,9 @@
 mpcPlanner::mpcPlanner(){
 	this->g = 9.8;
 	this->mass = 1.0; //kg
-	this->k_roll = 1.0; this->tau_roll = 1.0; 
-	this->k_pitch = 1.0; this->tau_pitch = 1.0;
-	this->T_max = 2.5; //kg
+	this->k_roll = 10.0; this->tau_roll = 1.0; 
+	this->k_pitch = 10.0; this->tau_pitch = 1.0;
+	this->T_max = 2.5 * 9.8; //
 	this->roll_max = PI_const/6; this->pitch_max = PI_const/6;
 	this->horizon = 20;
 	this->first_time = true;
@@ -14,9 +14,9 @@ mpcPlanner::mpcPlanner(){
 mpcPlanner::mpcPlanner(int _horizon){
 	this->g = 9.8;
 	this->mass = 1.0; //kg
-	this->k_roll = 1.0; this->tau_roll = 1.0; 
-	this->k_pitch = 1.0; this->tau_pitch = 1.0;
-	this->T_max = 2.5; //kg
+	this->k_roll = 10.0; this->tau_roll = 1.0; 
+	this->k_pitch = 10.0; this->tau_pitch = 1.0;
+	this->T_max = 2.5 * 9.8; //
 	this->roll_max = PI_const/6; this->pitch_max = PI_const/6;
 	this->horizon = _horizon;
 	this->first_time = true;
@@ -413,7 +413,7 @@ int mpcPlanner::optimize(const DVector &currentStates, double currentYaw, const 
 	// ocp.subjectTo( 0 <= sqrt(pow(vx, 2) + pow(vy, 2) + pow(vz, 2)) <= 4); // velocity constraint
 	ocp.subjectTo( -2 <= vx <= 2);
 	ocp.subjectTo( -2 <= vy <= 2);
-	ocp.subjectTo( -2 <= vz <= 2);
+	ocp.subjectTo( -2 <= vz <= 2 );
 
 	// TODO: obstacle constraint:
 	double delta = 0.01; 
@@ -444,6 +444,12 @@ int mpcPlanner::optimize(const DVector &currentStates, double currentYaw, const 
 	RTalgorithm.getDifferentialStates(xd);
 	mpc_trajectory = this->getTrajectory(xd, start_idx);
 	nextStates = xd.getVector(1);
+
+	// get controls:
+	VariablesGrid cd;
+	RTalgorithm.getControls(cd);
+	cout << "[Desired States: ]" << xd.getVector(1) << endl;
+	cout << "[Controls: ]" << cd.getVector(0) << endl; 
 	clearAllStaticCounters();
 	return obstacle_idx;
 }
