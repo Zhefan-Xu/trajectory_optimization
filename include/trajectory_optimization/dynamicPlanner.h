@@ -4,7 +4,7 @@
 #include <trajectory_optimization/mapModuleOctomap.h>
 
 
-std::vector<pose> dynamicPlanner(const std::vector<pose> &trajectory, const std::vector<obstacle> &obstacles, int horizon, double mass, double k_roll, double tau_roll, 
+std::vector<pose> dynamicPlanner(mapModule* mapModuleOctomap, const std::vector<pose> &trajectory, const std::vector<obstacle> &obstacles, int horizon, double mass, double k_roll, double tau_roll, 
 								 double k_pitch, double tau_pitch, double T_max, double roll_max, double pitch_max, double delT,
 								 const DVector &currentStates, double currentYaw, DVector &nextStates, VariablesGrid &xd){
 	std::vector<pose> mpc_trajectory;
@@ -15,9 +15,21 @@ std::vector<pose> dynamicPlanner(const std::vector<pose> &trajectory, const std:
 	mp.optimize(currentStates, currentYaw, obstacles, nextStates, mpc_trajectory, xd); 
 
 	// TODO: include collision checking
-	
-	
-	return mpc_trajectory;
+	std::vector<int> collision_idx;
+	bool valid = mapModuleOctomap->checkCollisionTrajectory(mpc_trajectory, collision_idx);
+	std::vector<pose> final_trajectory;
+	if (not valid){
+		int stop_idx = collision_idx[0];
+		if (stop_idx == 0){stop_idx = 1;}
+		for (int i=0; i<stop_idx; ++i){
+			final_trajectory.push_back(mpc_trajectory[i]);
+		}
+	}
+	else{
+		final_trajectory = mpc_trajectory;
+	}
+
+	return final_trajectory;
 } 
 
 

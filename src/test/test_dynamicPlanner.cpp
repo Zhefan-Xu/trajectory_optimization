@@ -56,7 +56,7 @@ int main(int argc, char** argv){
 		VariablesGrid xd;
 		std::vector<obstacle> obstacles;
 		auto start_time = high_resolution_clock::now();
-		mpc_trajectory = dynamicPlanner(trajectory, obstacles, horizon, mass, k_roll, tau_roll, k_pitch, tau_pitch, T_max, roll_max, pitch_max, delT, currentStates, currentYaw, nextStates, xd);
+		mpc_trajectory = dynamicPlanner(mapModuleOctomap, trajectory, obstacles, horizon, mass, k_roll, tau_roll, k_pitch, tau_pitch, T_max, roll_max, pitch_max, delT, currentStates, currentYaw, nextStates, xd);
 		currentStates = nextStates; 
 		auto end_time = high_resolution_clock::now();
 		auto duration_total = duration_cast<microseconds>(end_time - start_time);

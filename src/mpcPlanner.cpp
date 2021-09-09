@@ -66,29 +66,31 @@ int mpcPlanner::findNearestPoseIndex(const DVector &states){
 }
 
 VariablesGrid mpcPlanner::getReference(int start_idx){ // need to specify the start index of the trajectory
-	VariablesGrid r (3, 0);
+	VariablesGrid r (6, 0);
 	double t = 0; int count_horizon = 0;
 	for (int i=start_idx; i<start_idx+this->horizon; ++i){
 		if (i > this->ref_trajectory.size()-1){
 			break;
 		}
 
-		DVector pose_i (3);
+		DVector pose_i (6);
 		pose_i(0) = this->ref_trajectory[i].x;
 		pose_i(1) = this->ref_trajectory[i].y;
 		pose_i(2) = this->ref_trajectory[i].z;
-		// pose_i(3) = this->ref_trajectory[i].yaw;
+		pose_i(3) = 0; // control thrust
+		pose_i(4) = 0; // control roll
+		pose_i(5) = 0; // control pitch
 		r.addVector(pose_i, t);
 		t += this->delT;
 		++count_horizon;
 	}
 
 
-	DVector last_refPose (3); pose last_pose = this->ref_trajectory[this->ref_trajectory.size()-1];
+	DVector last_refPose (6); pose last_pose = this->ref_trajectory[this->ref_trajectory.size()-1];
 	last_refPose(0) = last_pose.x; last_refPose(1) = last_pose.y; last_refPose(2) = last_pose.z;
+	last_refPose(3) = 0; last_refPose(4) = 0; last_refPose(5) = 0;
 	while (count_horizon != this->horizon){
 		r.addVector(last_refPose, t);
-		// r.addVector(r.getLastVector(), t);
 		t += this->delT;
 		++count_horizon;
 	}
@@ -98,9 +100,10 @@ VariablesGrid mpcPlanner::getReference(int start_idx){ // need to specify the st
 }
 
 VariablesGrid mpcPlanner::getReference(const pose &p){ // static target
-	VariablesGrid r (3, 0);
-	DVector pose_i (3);
+	VariablesGrid r (6, 0);
+	DVector pose_i (6);
 	pose_i(0) = p.x; pose_i(1) = p.y; pose_i(2) = p.z;
+	pose_i(3) = 0; pose_i(4) = 0; pose_i(5) = 0;
 	double t = 0; 
 	for (int i=0; i<this->horizon; ++i){
 		r.addVector(pose_i, t);
@@ -110,10 +113,11 @@ VariablesGrid mpcPlanner::getReference(const pose &p){ // static target
 }
 
 VariablesGrid mpcPlanner::getReference(const pose &p, int target_idx, double ratio){ // ratio: ratio of proceeding
-	VariablesGrid r (3, 0);
-	DVector pose_i (3);
+	VariablesGrid r (6, 0);
+	DVector pose_i (6);
 	int proceed_num = ratio * this->horizon; int repeat_num = this->horizon - proceed_num;
 	pose_i(0) = p.x; pose_i(1) = p.y; pose_i(2) = p.z;
+	pose_i(3) = 0; pose_i(4) = 0; pose_i(5) = 0;
 	double t = 0; int count_proceed = 1;
 	for (int i=0; i<this->horizon; ++i){
 		if (i < repeat_num){
@@ -123,6 +127,9 @@ VariablesGrid mpcPlanner::getReference(const pose &p, int target_idx, double rat
 			pose_i(0) = this->ref_trajectory[target_idx+count_proceed].x;
 			pose_i(1) = this->ref_trajectory[target_idx+count_proceed].y;
 			pose_i(2) = this->ref_trajectory[target_idx+count_proceed].z;
+			pose_i(3) = 0; // control thrust
+			pose_i(4) = 0; // control roll
+			pose_i(5) = 0; // control pitch
 			++count_proceed;
 		}
 		r.addVector(pose_i, t);
@@ -273,9 +280,12 @@ int mpcPlanner::optimize(const DVector &currentStates, double currentYaw, const 
 	h << x;
 	h << y;
 	h << z;
+	h << T;
+	h << roll_d;
+	h << pitch_d;
 
-	DMatrix Q(3, 3);
-    Q.setIdentity(); Q(0,0) = 10.0; Q(1,1) = 10.0; Q(2,2) = 10.0; 
+	DMatrix Q(6, 6);
+    Q.setIdentity(); Q(0,0) = 10.0; Q(1,1) = 10.0; Q(2,2) = 10.0; Q(3,3) = 1.0; Q(4,4) = 1.0; Q(5,5) = 1.0; 
 	
 	// get tracking trajectory (future N seconds)
 	int start_idx = this->findNearestPoseIndex(currentStates);
@@ -304,7 +314,7 @@ int mpcPlanner::optimize(const DVector &currentStates, double currentYaw, const 
 
 	// Dynamic Constraint
 	ocp.subjectTo(f); 
-	
+
 	// Control Constraints
 	ocp.subjectTo( 0 <= T <= this->T_max ); 
 	ocp.subjectTo( -this->roll_max <= roll_d <= this->roll_max );
@@ -317,21 +327,21 @@ int mpcPlanner::optimize(const DVector &currentStates, double currentYaw, const 
 	ocp.subjectTo( -2 <= vz <= 2 );
 
 	// TODO: obstacle constraint:
-	double delta = 0.01; 
+	double delta = 0.2; 
 	double safe_dist = 2.0;
 	for (int t=0; t < this->horizon; ++t){
 		for (obstacle ob: obstacles){
 			obstacle pred_ob = this->predictObstacleState(ob, t);
 			double obstacle_distance = getDistance(pred_ob, pose(currentStates(0), currentStates(1), currentStates(2)));
 			if (obstacle_distance < 5.0){
-				ocp.subjectTo(t,   sqrt(pow((x-pred_ob.x), 2)/pow(pred_ob.xsize/2, 2) + pow((y-pred_ob.y), 2)/pow(pred_ob.ysize/2, 2) + pow((z-pred_ob.z), 2)/pow(pred_ob.zsize/2,2)) -1
-				               >= safe_dist ) ; // without probability
+				// ocp.subjectTo(t,   sqrt(pow((x-pred_ob.x), 2)/pow(pred_ob.xsize/2, 2) + pow((y-pred_ob.y), 2)/pow(pred_ob.ysize/2, 2) + pow((z-pred_ob.z), 2)/pow(pred_ob.zsize/2,2)) -1
+				//                >= safe_dist ) ; // without probability
+				ocp.subjectTo(t, sqrt(pow((x-pred_ob.x), 2)/pow(pred_ob.xsize/2, 2) + pow((y-pred_ob.y), 2)/pow(pred_ob.ysize/2, 2) + pow((z-pred_ob.z), 2)/pow(pred_ob.zsize/2,2)) -1
+			            - my_erfinvf(1-2*delta) * sqrt(2 * (pred_ob.varX*pow(x-pred_ob.x, 2)/pow(pred_ob.xsize/2, 4) + 
+			               								pred_ob.varY*pow(y-pred_ob.y, 2)/pow(pred_ob.ysize/2, 4) + // with probability
+														pred_ob.varZ*pow(z-pred_ob.z, 2)/pow(pred_ob.zsize/2, 4))
+														* 1/(pow((x - pred_ob.x)/pred_ob.xsize/2, 2) + pow((y - pred_ob.y)/pred_ob.ysize/2, 2) + pow((z - pred_ob.z)/pred_ob.zsize/2, 2))) >= 0 ) ;						
 			}
-			// ocp.subjectTo(t, sqrt(pow((x-pred_ob.x), 2)/pow(pred_ob.xsize/2, 2) + pow((y-pred_ob.y), 2)/pow(pred_ob.ysize/2, 2) + pow((z-pred_ob.z), 2)/pow(pred_ob.zsize/2,2)) -1
-			//             - my_erfinvf(1-2*delta) * sqrt(2 * (pred_ob.varX*pow(x-pred_ob.x, 2)/pow(pred_ob.xsize/2, 4) + 
-			//                								pred_ob.varY*pow(y-pred_ob.y, 2)/pow(pred_ob.ysize/2, 4) + // with probability
-			// 											pred_ob.varZ*pow(z-pred_ob.z, 2)/pow(pred_ob.zsize/2, 4))
-			// 											* 1/(pow((x - pred_ob.x)/pred_ob.xsize/2, 2) + pow((y - pred_ob.y)/pred_ob.ysize/2, 2) + pow((z - pred_ob.z)/pred_ob.zsize/2, 2))) >= 0 ) ;						
 		}
 	}
 
