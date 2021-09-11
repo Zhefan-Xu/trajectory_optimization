@@ -45,7 +45,7 @@ std::vector<pose> staticPlanner(mapModule* mapModuleOctomap, int degree, double 
 			polytrajOptimizer.optimize();
 			trajectory = polytrajOptimizer.getTrajectory(delT);
 			collision_idx.clear();
-			valid = mapModuleOctomap->checkCollisionTrajectory(trajectory, collision_idx);
+			valid = mapModuleOctomap->checkCollisionTrajectory(trajectory, collision_idx, true);
 			if (valid){
 				break;
 			}

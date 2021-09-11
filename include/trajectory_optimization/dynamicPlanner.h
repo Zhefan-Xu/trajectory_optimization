@@ -16,7 +16,7 @@ std::vector<pose> dynamicPlanner(mapModule* mapModuleOctomap, const std::vector<
 
 	// TODO: include collision checking
 	std::vector<int> collision_idx;
-	bool valid = mapModuleOctomap->checkCollisionTrajectory(mpc_trajectory, collision_idx);
+	bool valid = mapModuleOctomap->checkCollisionTrajectory(mpc_trajectory, collision_idx, true); // third argument is to ignore unknown
 	std::vector<pose> final_trajectory;
 	if (not valid){
 		int stop_idx = collision_idx[0];

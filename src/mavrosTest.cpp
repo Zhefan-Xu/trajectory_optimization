@@ -63,7 +63,7 @@ void mavrosTest::run(){
 
 	// Initialize Map with map parameters:
 	double res = 0.1; // map resolution
-	double xsize = 0.2; double ysize = 0.2; double zsize = 0.1; // Robot collision box size
+	double xsize = 0.1; double ysize = 0.1; double zsize = 0.1; // Robot collision box size
 	mapModule* mapModuleOctomap = new mapModule (nh, res, xsize, ysize, zsize);
 	mapModuleOctomap->updateMap();
 
@@ -72,16 +72,17 @@ void mavrosTest::run(){
 
 	// static planner: parameters
 	int degree = 7; // polynomial degree
-	double velocityd = 1.5; // desired average velocity
+	double velocityd = 3; // desired average velocity
 	int diff_degree = 4; // Minimum snap (4), minimum jerk (3)
 	double perturb = 1; // Regularization term and also make PSD -> PD
 	// bool shortcut = true; // shortcut waypoints
 	bool shortcut = false; // shortcut waypoints
+	double static_sampling_delT = 0.1;
 	std::vector<pose> loadPath;
 
 	// solve trajectory:
 	auto start_time_static = high_resolution_clock::now();
-	std::vector<pose> trajectory = staticPlanner(mapModuleOctomap, degree, velocityd, diff_degree, perturb, path, shortcut, delT, loadPath);
+	std::vector<pose> trajectory = staticPlanner(mapModuleOctomap, degree, velocityd, diff_degree, perturb, path, shortcut, static_sampling_delT, loadPath);
 	auto end_time_static = high_resolution_clock::now();
 	auto duration_total_static = duration_cast<microseconds>(end_time_static - start_time_static);
 	cout << "Total: "<< duration_total_static.count()/1e6 << " seconds. " << endl;	
@@ -91,7 +92,7 @@ void mavrosTest::run(){
 	// Dynamic Planner: parameters
 	int horizon = 20; // MPC horizon
 	double mass = 1.5; double k_roll = 10.0; double tau_roll = 1.0; double k_pitch = 10.0; double tau_pitch = 1.0; 
-	double T_max = 3.0 * 9.8; double roll_max = PI_const/6; double pitch_max = PI_const/6;
+	double T_max = 3.0 * 9.8; double roll_max = PI_const/6; double pitch_max = PI_const/6; 
 
 	// Initialize Variables
 	double currentYaw;

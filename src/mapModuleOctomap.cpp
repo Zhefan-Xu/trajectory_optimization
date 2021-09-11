@@ -34,19 +34,26 @@ void mapModule::updateMap(){
 }
 
 
-bool mapModule::checkCollision(point3d p){
+bool mapModule::checkCollision(point3d p, bool ignore_unknown){
 	//True: no collision, False: collision
 	OcTreeNode* nptr = tree_ptr->search(p);
-	if (nptr == NULL){return false;}
+	if (nptr == NULL){
+		if (not ignore_unknown){
+			return false;
+		}
+		else{
+			return true;
+		}
+	}
 	return !(tree_ptr->isNodeOccupied(nptr));
 }
 
-bool mapModule::checkCollision(pose p){
+bool mapModule::checkCollision(pose p, bool ignore_unknown){
 	point3d p_point3d (p.x, p.y, p.z);
-	return this->checkCollision(p_point3d);
+	return this->checkCollision(p_point3d, ignore_unknown);
 }
 
-bool mapModule::checkCollisionRobot(point3d p){
+bool mapModule::checkCollisionRobot(point3d p, bool ignore_unknown){
 	double xmin, xmax, ymin, ymax, zmin, zmax; // bounding box for collision checking
 	xmin = p.x() - xsize/2; xmax = p.x() + xsize/2;
 	ymin = p.y() - ysize/2; ymax = p.y() + ysize/2;
@@ -55,7 +62,7 @@ bool mapModule::checkCollisionRobot(point3d p){
 	for (double x=xmin; x<xmax; x+=res){
 		for (double y=ymin; y<ymax; y+=res){
 			for (double z=zmin; z<zmax; z+=res){
-				if (this->checkCollision(point3d (x, y, z))){
+				if (this->checkCollision(point3d (x, y, z)), ignore_unknown){
 					// do nothing
 				}
 				else{
@@ -67,16 +74,16 @@ bool mapModule::checkCollisionRobot(point3d p){
 	return true;
 }
 
-bool mapModule::checkCollisionRobot(pose p){
+bool mapModule::checkCollisionRobot(pose p, bool ignore_unknown){
 	point3d p_point3d (p.x, p.y, p.z);
-	return this->checkCollisionRobot(p_point3d);
+	return this->checkCollisionRobot(p_point3d, ignore_unknown);
 }
 
-bool mapModule::checkCollisionTrajectory(const std::vector<pose>& trajectory, std::vector<int>& collision_idx){
+bool mapModule::checkCollisionTrajectory(const std::vector<pose>& trajectory, std::vector<int>& collision_idx, bool ignore_unknown){
 	bool valid = true;
 	int count = 0;
 	for (pose p: trajectory){
-		if (!this->checkCollisionRobot(p)){
+		if (!this->checkCollisionRobot(p, ignore_unknown)){
 			valid = false;
 			collision_idx.push_back(count);
 		}
@@ -86,31 +93,31 @@ bool mapModule::checkCollisionTrajectory(const std::vector<pose>& trajectory, st
 	return valid;
 }
 
-bool mapModule::checkCollisionLine(point3d p1, point3d p2){
+bool mapModule::checkCollisionLine(point3d p1, point3d p2, bool ignore_unknown){
 	// True: no collision; False: collision
 	std::vector<point3d> ray;
 	tree_ptr->computeRay(p1, p2, ray);
 	for (point3d p: ray){
-		if (!this->checkCollisionRobot(p)){
+		if (!this->checkCollisionRobot(p, ignore_unknown)){
 			return false;
 		}
 	}
 	return true;
 }
 
-bool mapModule::checkCollisionLine(pose p1, pose p2){
+bool mapModule::checkCollisionLine(pose p1, pose p2, bool ignore_unknown){
 	point3d p1_point3d (p1.x, p1.y, p1.z);
 	point3d p2_point3d (p2.x, p2.y, p2.z);
-	return this->checkCollisionLine(p1_point3d, p2_point3d);
+	return this->checkCollisionLine(p1_point3d, p2_point3d, ignore_unknown);
 }
 
-std::vector<pose> mapModule::shortcutWaypointPath(std::vector<pose> path){
+std::vector<pose> mapModule::shortcutWaypointPath(std::vector<pose> path, bool ignore_unknown){
 	std::vector<pose> path_sc;
 	int ptr1 = 0; int ptr2 = 1;
 	path_sc.push_back(path[ptr1]);
 	while (true and ros::ok()){
 		pose p1 = path[ptr1]; pose p2 = path[ptr2];
-		if (checkCollisionLine(p1, p2)){
+		if (checkCollisionLine(p1, p2, ignore_unknown)){
 			if (ptr2 >= path.size()-1){
 				path_sc.push_back(p2);
 				break;

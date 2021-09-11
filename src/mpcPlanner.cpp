@@ -232,7 +232,7 @@ bool mpcPlanner::isObstacleFront(const pose &p, const pose &ob_p){
 }
 
 bool mpcPlanner::isMeetingObstacle(const DVector &currentStates, double currentYaw, const std::vector<obstacle> &obstacles, int &obstacle_idx){
-	double distance_thresh = 5.0; int count_obstacle_idx = 0;
+	double distance_thresh = 3.0; int count_obstacle_idx = 0;
 	// 1. calculate distance to each obstacles
 	for (obstacle ob: obstacles){
 		double distance = getDistance(pose(currentStates(0), currentStates(1), currentStates(2), currentYaw), pose(ob.x, ob.y, ob.z));
@@ -321,11 +321,11 @@ int mpcPlanner::optimize(const DVector &currentStates, double currentYaw, const 
 	ocp.subjectTo( -this->pitch_max <= pitch_d <= this->pitch_max );
 	// ocp.subjectTo( -this->roll_max <= roll <= this->roll_max );
 	// ocp.subjectTo( -this->pitch_max <= pitch <= this->pitch_max );
-	
-	ocp.subjectTo( -3 <= vx <= 3 );
-	ocp.subjectTo( -3 <= vy <= 3 );
-	ocp.subjectTo( -3 <= vz <= 3 );
-
+	if (meetObstacle){
+		ocp.subjectTo( -3 <= vx <= 3 );
+		ocp.subjectTo( -3 <= vy <= 3 );
+		ocp.subjectTo( -3 <= vz <= 3 );
+	}
 	// TODO: obstacle constraint:
 	double delta = 0.2; 
 	double safe_dist = 2.0;
