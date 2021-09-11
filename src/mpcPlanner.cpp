@@ -285,7 +285,7 @@ int mpcPlanner::optimize(const DVector &currentStates, double currentYaw, const 
 	h << pitch_d;
 
 	DMatrix Q(6, 6);
-    Q.setIdentity(); Q(0,0) = 10.0; Q(1,1) = 10.0; Q(2,2) = 10.0; Q(3,3) = 1.0; Q(4,4) = 1.0; Q(5,5) = 1.0; 
+    Q.setIdentity(); Q(0,0) = 1000.0; Q(1,1) = 1000.0; Q(2,2) = 1000.0; Q(3,3) = 1.0; Q(4,4) = 0.1; Q(5,5) = 0.1; 
 	
 	// get tracking trajectory (future N seconds)
 	int start_idx = this->findNearestPoseIndex(currentStates);
@@ -319,12 +319,12 @@ int mpcPlanner::optimize(const DVector &currentStates, double currentYaw, const 
 	ocp.subjectTo( 0 <= T <= this->T_max ); 
 	ocp.subjectTo( -this->roll_max <= roll_d <= this->roll_max );
 	ocp.subjectTo( -this->pitch_max <= pitch_d <= this->pitch_max );
-	ocp.subjectTo( -this->roll_max <= roll <= this->roll_max );
-	ocp.subjectTo( -this->pitch_max <= pitch <= this->pitch_max );
+	// ocp.subjectTo( -this->roll_max <= roll <= this->roll_max );
+	// ocp.subjectTo( -this->pitch_max <= pitch <= this->pitch_max );
 	
-	ocp.subjectTo( -2 <= vx <= 2);
-	ocp.subjectTo( -2 <= vy <= 2);
-	ocp.subjectTo( -2 <= vz <= 2 );
+	ocp.subjectTo( -3 <= vx <= 3 );
+	ocp.subjectTo( -3 <= vy <= 3 );
+	ocp.subjectTo( -3 <= vz <= 3 );
 
 	// TODO: obstacle constraint:
 	double delta = 0.2; 
@@ -334,13 +334,13 @@ int mpcPlanner::optimize(const DVector &currentStates, double currentYaw, const 
 			obstacle pred_ob = this->predictObstacleState(ob, t);
 			double obstacle_distance = getDistance(pred_ob, pose(currentStates(0), currentStates(1), currentStates(2)));
 			if (obstacle_distance < 5.0){
-				// ocp.subjectTo(t,   sqrt(pow((x-pred_ob.x), 2)/pow(pred_ob.xsize/2, 2) + pow((y-pred_ob.y), 2)/pow(pred_ob.ysize/2, 2) + pow((z-pred_ob.z), 2)/pow(pred_ob.zsize/2,2)) -1
-				//                >= safe_dist ) ; // without probability
-				ocp.subjectTo(t, sqrt(pow((x-pred_ob.x), 2)/pow(pred_ob.xsize/2, 2) + pow((y-pred_ob.y), 2)/pow(pred_ob.ysize/2, 2) + pow((z-pred_ob.z), 2)/pow(pred_ob.zsize/2,2)) -1
-			            - my_erfinvf(1-2*delta) * sqrt(2 * (pred_ob.varX*pow(x-pred_ob.x, 2)/pow(pred_ob.xsize/2, 4) + 
-			               								pred_ob.varY*pow(y-pred_ob.y, 2)/pow(pred_ob.ysize/2, 4) + // with probability
-														pred_ob.varZ*pow(z-pred_ob.z, 2)/pow(pred_ob.zsize/2, 4))
-														* 1/(pow((x - pred_ob.x)/pred_ob.xsize/2, 2) + pow((y - pred_ob.y)/pred_ob.ysize/2, 2) + pow((z - pred_ob.z)/pred_ob.zsize/2, 2))) >= 0 ) ;						
+				ocp.subjectTo(t,   sqrt(pow((x-pred_ob.x), 2)/pow(pred_ob.xsize/2, 2) + pow((y-pred_ob.y), 2)/pow(pred_ob.ysize/2, 2) + pow((z-pred_ob.z), 2)/pow(pred_ob.zsize/2,2)) -1
+				               >= safe_dist ) ; // without probability
+				// ocp.subjectTo(t, sqrt(pow((x-pred_ob.x), 2)/pow(pred_ob.xsize/2, 2) + pow((y-pred_ob.y), 2)/pow(pred_ob.ysize/2, 2) + pow((z-pred_ob.z), 2)/pow(pred_ob.zsize/2,2)) -1
+			 //            - my_erfinvf(1-2*delta) * sqrt(2 * (pred_ob.varX*pow(x-pred_ob.x, 2)/pow(pred_ob.xsize/2, 4) + 
+			 //               								pred_ob.varY*pow(y-pred_ob.y, 2)/pow(pred_ob.ysize/2, 4) + // with probability
+				// 										pred_ob.varZ*pow(z-pred_ob.z, 2)/pow(pred_ob.zsize/2, 4))
+				// 										* 1/(pow((x - pred_ob.x)/pred_ob.xsize/2, 2) + pow((y - pred_ob.y)/pred_ob.ysize/2, 2) + pow((z - pred_ob.z)/pred_ob.zsize/2, 2))) >= 0 ) ;						
 			}
 		}
 	}

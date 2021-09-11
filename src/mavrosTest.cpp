@@ -89,7 +89,7 @@ void mavrosTest::run(){
 	trajectory_msg = wrapVisMsg(trajectory, 0, 1, 0);
 
 	// Dynamic Planner: parameters
-	int horizon = 40; // MPC horizon
+	int horizon = 20; // MPC horizon
 	double mass = 1.5; double k_roll = 10.0; double tau_roll = 1.0; double k_pitch = 10.0; double tau_pitch = 1.0; 
 	double T_max = 3.0 * 9.8; double roll_max = PI_const/6; double pitch_max = PI_const/6;
 
@@ -228,6 +228,13 @@ void mavrosTest::modifyMPCGoal(const std::vector<pose> &mpc_trajectory, const Va
 	int forward_idx = 10;
 	if (forward_idx >= mpc_trajectory.size()){
 		forward_idx = mpc_trajectory.size() - 1;
+		if (forward_idx < 0){
+			double currentYaw;
+			DVector currentStates = this->getCurrentState(currentYaw);
+			goal.position.x = currentStates(0); goal.position.y = currentStates(1); goal.position.z = currentStates(2);
+			goal.yaw = currentYaw;
+			return;
+		}
 	}
 	goal.type_mask =  goal.IGNORE_VX + goal.IGNORE_VY + goal.IGNORE_VZ
 					+ goal.IGNORE_AFX + goal.IGNORE_AFY + goal.IGNORE_AFZ
