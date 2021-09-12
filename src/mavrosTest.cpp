@@ -72,7 +72,7 @@ void mavrosTest::run(){
 
 	// static planner: parameters
 	int degree = 7; // polynomial degree
-	double velocityd = 3; // desired average velocity
+	double velocityd = 2; // desired average velocity
 	int diff_degree = 4; // Minimum snap (4), minimum jerk (3)
 	double perturb = 1; // Regularization term and also make PSD -> PD
 	// bool shortcut = true; // shortcut waypoints
@@ -178,7 +178,7 @@ void mavrosTest::publishGoal(){
 }
 
 void mavrosTest::publishVisMsg(){
-	ros::Rate rate(10);
+	ros::Rate rate(20);
 	while (ros::ok()){
 		path_vis_pub.publish(path_msg);
         trajectory_vis_pub.publish(trajectory_msg);
