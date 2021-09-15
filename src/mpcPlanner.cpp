@@ -186,7 +186,7 @@ pose mpcPlanner::getClosestObstaclePose(int start_idx, const obstacle &ob){
 	return this->ref_trajectory[count_idx];
 }
 
-pose mpcPlanner::getAvoidanceTarget(int start_idx, const obstacle &ob, int &target_idx){ // TODO
+pose mpcPlanner::getAvoidanceTarget(int start_idx, const obstacle &ob, int &target_idx){ 
 	double min_dist_thresh = 1.0;
 	for (int i=start_idx; i < this->ref_trajectory.size(); ++i){
 		pose p = this->ref_trajectory[i];
@@ -298,7 +298,8 @@ int mpcPlanner::optimize(const DVector &currentStates, double currentYaw, const 
 		cout << "[MPC INFO]: " << "FACING OBSTACLE!!!!!!!" << endl;	
 		int target_idx;
 		pose avoidanceTarget = this->getAvoidanceTarget(start_idx, obstacles[obstacle_idx], target_idx);
-		double ratio = 0.5;
+		// double ratio = 0.5;
+		double ratio = 0.0;
 		r = this->getReference(avoidanceTarget, target_idx, ratio);
 	}
 	else{
@@ -327,20 +328,21 @@ int mpcPlanner::optimize(const DVector &currentStates, double currentYaw, const 
 		ocp.subjectTo( -3 <= vz <= 3 );
 	}
 	// TODO: obstacle constraint:
-	double delta = 0.2; 
-	double safe_dist = 2.0;
+	double delta = 0.1; 
+	// double safe_dist = 2.0;
+	double safe_dist = 0.10;
 	for (int t=0; t < this->horizon; ++t){
 		for (obstacle ob: obstacles){
 			obstacle pred_ob = this->predictObstacleState(ob, t);
 			double obstacle_distance = getDistance(pred_ob, pose(currentStates(0), currentStates(1), currentStates(2)));
 			if (obstacle_distance < 5.0){
-				ocp.subjectTo(t,   sqrt(pow((x-pred_ob.x), 2)/pow(pred_ob.xsize/2, 2) + pow((y-pred_ob.y), 2)/pow(pred_ob.ysize/2, 2) + pow((z-pred_ob.z), 2)/pow(pred_ob.zsize/2,2)) -1
-				               >= safe_dist ) ; // without probability
-				// ocp.subjectTo(t, sqrt(pow((x-pred_ob.x), 2)/pow(pred_ob.xsize/2, 2) + pow((y-pred_ob.y), 2)/pow(pred_ob.ysize/2, 2) + pow((z-pred_ob.z), 2)/pow(pred_ob.zsize/2,2)) -1
-			 //            - my_erfinvf(1-2*delta) * sqrt(2 * (pred_ob.varX*pow(x-pred_ob.x, 2)/pow(pred_ob.xsize/2, 4) + 
-			 //               								pred_ob.varY*pow(y-pred_ob.y, 2)/pow(pred_ob.ysize/2, 4) + // with probability
-				// 										pred_ob.varZ*pow(z-pred_ob.z, 2)/pow(pred_ob.zsize/2, 4))
-				// 										* 1/(pow((x - pred_ob.x)/pred_ob.xsize/2, 2) + pow((y - pred_ob.y)/pred_ob.ysize/2, 2) + pow((z - pred_ob.z)/pred_ob.zsize/2, 2))) >= 0 ) ;						
+				// ocp.subjectTo(t,   sqrt(pow((x-pred_ob.x), 2)/pow(pred_ob.xsize/2, 2) + pow((y-pred_ob.y), 2)/pow(pred_ob.ysize/2, 2) + pow((z-pred_ob.z), 2)/pow(pred_ob.zsize/2,2)) -1
+				//                >= safe_dist ) ; // without probability
+				ocp.subjectTo(t, sqrt(pow((x-pred_ob.x), 2)/pow(pred_ob.xsize/2, 2) + pow((y-pred_ob.y), 2)/pow(pred_ob.ysize/2, 2) + pow((z-pred_ob.z), 2)/pow(pred_ob.zsize/2,2)) -1
+			            - my_erfinvf(1-2*delta) * sqrt(2 * (pred_ob.varX*pow(x-pred_ob.x, 2)/pow(pred_ob.xsize/2, 4) + 
+			               								pred_ob.varY*pow(y-pred_ob.y, 2)/pow(pred_ob.ysize/2, 4) + // with probability
+														pred_ob.varZ*pow(z-pred_ob.z, 2)/pow(pred_ob.zsize/2, 4))
+														* 1/(pow((x - pred_ob.x)/pred_ob.xsize/2, 2) + pow((y - pred_ob.y)/pred_ob.ysize/2, 2) + pow((z - pred_ob.z)/pred_ob.zsize/2, 2))) >= 0 ) ;						
 			}
 		}
 	}

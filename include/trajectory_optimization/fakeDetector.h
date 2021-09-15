@@ -4,6 +4,8 @@
 #include <iostream>
 #include <gazebo_msgs/GetModelState.h>
 #include <trajectory_optimization/utils.h>
+#include <random>
+
 
 using std::cout; using std::endl;
 
