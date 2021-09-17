@@ -56,6 +56,13 @@ cd build
 cmake ..
 make
 ```
+For  [Quadprog++](https://github.com/liuq/QuadProgpp), please follow the scritps:
+```
+cd path/to/packages
+git clone https://github.com/liuq/QuadProgpp.git
+cmake .; make; make install
+```
+
 
 ## How to Use
 TODO
