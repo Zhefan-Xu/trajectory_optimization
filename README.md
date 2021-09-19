@@ -1,5 +1,5 @@
 # Trajectory Optimization
-TODO
+The experiments are available at [YouTube link](https://youtu.be/e03kZ8Zh0AI)
 
 ## DEMO
 Please watch the Youtube Video for all experiments.
