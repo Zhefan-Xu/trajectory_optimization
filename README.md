@@ -65,4 +65,7 @@ cmake .; make; make install
 
 
 ## How to Use
-TODO
+Start the simulation (Environment Tree as the example):
+```
+roslaunch cerlab_uav uav_simulation_dynamic_tree.launch
+```
