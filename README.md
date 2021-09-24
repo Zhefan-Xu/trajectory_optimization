@@ -1,6 +1,9 @@
 # Trajectory Optimization
 The experiments are available at [YouTube link](https://youtu.be/e03kZ8Zh0AI)
-[![Watch the video](https://i.imgur.com/vKb2F1B.png)](https://youtu.be/e03kZ8Zh0AI)
+
+
+
+https://user-images.githubusercontent.com/55560905/134603301-1045f44d-f76e-44fc-ae22-16e337172300.mp4
 
 
 ## DEMO
