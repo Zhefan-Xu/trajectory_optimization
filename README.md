@@ -71,5 +71,17 @@ cmake .; make; make install
 ## How to Use
 Start the simulation (Environment Tree as the example):
 ```
-roslaunch cerlab_uav uav_simulation_dynamic_tree.launch
+roslaunch cerlab_uav uav_simulation_dynamic_tree.launch 
+```
+Load map:
+```
+rosrun octomap_server octomap_server_node path/to/tree.bt
+```
+Run planner:
+```
+rosrun trajectory_optimization test_mavros_node
+```
+You can choose to visualize things in Rviz:
+```
+roslaunch trajectory_optimization rviz.launch
 ```
