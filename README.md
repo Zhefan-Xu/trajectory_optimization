@@ -8,7 +8,7 @@ https://user-images.githubusercontent.com/55560905/134603301-1045f44d-f76e-44fc-
 ## DEMO
 Please watch the Youtube Video for all experiments.
 
-## Prerequsite
+## Prerequsite (Simulator)
 Please follow [PX4 Gazebo](https://docs.px4.io/master/en/dev_setup/dev_env_linux_ubuntu.html#ros-gazebo) to install the vehicle model, and make it compatible with your current ROS.
 ```
 git clone https://github.com/PX4/PX4-Autopilot.git --recursive
@@ -16,7 +16,7 @@ bash ./PX4-Autopilot/Tools/setup/ubuntu.sh
 cd /path/to/PX4-Autopilot
 DONT_RUN=1 make px4_sitl_default gazebo
 ```
-add the following script to ```~/.bashrc```
+add the following script to the end of ```~/.bashrc```
 ```
 source Tools/setup_gazebo.bash $<PX4-Autopilot_clone> $<PX4-Autopilot_clone>/build/px4_sitl_default
 export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:<PX4-Autopilot_clone>
@@ -30,7 +30,7 @@ git clone https://github.com/Zhefan-Xu/drone_gazebo
 cd path/to/save/gazebo_models
 git clone https://github.com/osrf/gazebo_models
 ```
-add the following to the ```~/.bashrc```
+add the following to the end of ```~/.bashrc```
 ```
 export GAZEBO_MODEL_PATH=$GAZEBO_MODEL_PATH:~/catkin_ws/src/drone_gazebo/models
 export GAZEBO_MODEL_PATH=$GAZEBO_MODEL_PATH:path/to/gazebo_models
@@ -66,7 +66,11 @@ cd path/to/packages
 git clone https://github.com/liuq/QuadProgpp.git
 cmake .; make; make install
 ```
-
+Finally, install the package:
+```
+git clone https://github.com/Zhefan-Xu/trajectory_optimization
+catkin_make
+```
 
 ## How to Use
 Start the simulation (Environment Tree as the example):
