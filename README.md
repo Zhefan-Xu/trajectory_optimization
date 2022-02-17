@@ -3,7 +3,7 @@ This repo implements the Dynamic Polynomial-based Model Predictive Control (DPMP
 
 https://user-images.githubusercontent.com/55560905/134603301-1045f44d-f76e-44fc-ae22-16e337172300.mp4
 
-**Related paper: Zhefan Xu, Di Deng, Yiping Dong, Kenji Shimada, DPMPC-Planner: A real-time UAV trajectory planning framework for complex static environments with dynamic obstacles, IEEE International Conference on Robotics and Automation (ICRA), 2021. [link](https://arxiv.org/abs/2109.07024), 2021.**
+**Related paper: Zhefan Xu, Di Deng, Yiping Dong, Kenji Shimada, DPMPC-Planner: A real-time UAV trajectory planning framework for complex static environments with dynamic obstacles, IEEE International Conference on Robotics and Automation (ICRA), 2021. [link](https://arxiv.org/abs/2109.07024)**
 
 ## DEMO
 Please watch the Youtube Video for all experiments.
